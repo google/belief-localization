@@ -23,7 +23,7 @@ else
 fi
 
 # Default RECIPE 'rome' can be overridden by 'RECIPE' environment variable
-RECIPE=${RECIPE:-rome}
+RECIPE=${RECIPE:-beliefloc}
 # Default ENV_NAME 'rome' can be overridden by 'ENV_NAME'
 ENV_NAME="${ENV_NAME:-${RECIPE}}"
 echo "Creating conda environment ${ENV_NAME}"
