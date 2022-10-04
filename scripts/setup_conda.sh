@@ -42,7 +42,7 @@ then
     exit 1
 fi
 
-CUDA_DIR="/usr/local/cuda-11.1"
+CUDA_DIR="/usr/local/cuda-11.3"
 if [[ ! -d ${CUDA_DIR} ]]
 then
     echo "Environment requires ${CUDA_DIR}, not found."

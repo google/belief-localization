@@ -200,3 +200,4 @@ dependencies:
     - yarl==1.7.2
     - yaspin==2.1.0
     - zc-lockfile==2.0
+    - google-cloud-storage
