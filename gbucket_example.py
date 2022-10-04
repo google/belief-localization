@@ -1,7 +1,7 @@
 from google.cloud import storage
 
 
-def gcs_test(bucket_name, source_file_name, destination_blob_name):
+def gcs_test():
   """Uploads a file to the bucket."""
   storage_client = storage.Client()
   bucket = storage_client.get_bucket('research-brain-belief-localization-xgcp')
