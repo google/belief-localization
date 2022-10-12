@@ -454,7 +454,7 @@ if __name__ == "__main__":
         central_layers = list(range(0, 28, 4)) + [5, 27]
     num_layers = mt.num_layers
     window_sizes=[1]
-    central_layers=[1]
+    central_layers=[-1]
     print("Starting sweep with hparams:")
     print("- window_sizes: ", window_sizes)
     print("- central_layers: ", central_layers)
