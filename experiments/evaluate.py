@@ -442,9 +442,11 @@ if __name__ == "__main__":
     num_layers = mt.num_layers
     window_sizes=[1]
     central_layers=[-1]
+    print("Starting sweep with hparams:")
+    print("- window_sizes: ", window_sizes)
+    print("- central_layers: ", central_layers)
 
     # main experiment loop
-    # import pdb; pdb.set_trace()
     results_dfs = []
     for window_size in window_sizes:
         for central_layer in central_layers:
@@ -481,4 +483,7 @@ if __name__ == "__main__":
     bucket = storage_client.get_bucket('research-brain-belief-localization-xgcp')
     blob = bucket.blob(f'output/{file_name}')
     blob.upload_from_filename(save_path)
+
+    print(f"saving csv at {save_path}...")
+    print(results_df)
 
