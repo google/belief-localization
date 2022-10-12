@@ -411,7 +411,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # load model
-    if arsg.run:
+    if args.run:
         torch.set_grad_enabled(False)
         model_name = args.model_name
         torch_dtype = torch.float16 if '20b' in model_name else None
