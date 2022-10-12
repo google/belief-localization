@@ -10,7 +10,7 @@ from typing import Tuple, Union
 import torch
 import pandas as pd
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from transformers import GPTNeoXForCausalLM, GPTNeoXTokenizerFast
+# from transformers import GPTNeoXForCausalLM, GPTNeoXTokenizerFast
 
 from baselines.efk import EFKHyperParams, EfkRewriteExecutor
 from baselines.ft import FTHyperParams, apply_ft_to_model
