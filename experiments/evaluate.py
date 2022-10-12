@@ -42,6 +42,7 @@ DS_DICT = {
     "zsre": (MENDQADataset, compute_rewrite_quality_zsre),
 }
 
+CODE_DIR='/home/peterhase/belief-loc'
 BASE_DIR='/home/peterhase/'
 
 def get_override_hparams(window_size, central_layer, alg_name):
@@ -85,7 +86,7 @@ def ROME_experiment_name(model_name, alg_name, ds_name, hparams_to_add):
 
 def ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, override_hparams, hparams_class):
   _model_name = model_name.replace('/', '_')
-  params_path = os.path.join('{BASE_DIR}/rome/hparams/', alg_name, f"{_model_name}.json")
+  params_path = os.path.join('{CODE_DIR}/rome/hparams/', alg_name, f"{_model_name}.json")
   if alg_name == 'FT':
     params_path = params_path.replace('.json', '_constr.json')
   hparams = hparams_class.from_json(params_path)
@@ -218,7 +219,7 @@ def main(
 
     # Get run hyperparameters
     _model_name = model_name.replace('/', '_')
-    params_path = os.path.join('{BASE_DIR}/rome/hparams/', alg_name, f"{_model_name}.json")
+    params_path = os.path.join('{CODE_DIR}/rome/hparams/', alg_name, f"{_model_name}.json")
     if alg_name == 'FT':
       params_path = params_path.replace('.json', '_constr.json')
     hparams = params_class.from_json(params_path)
@@ -350,13 +351,6 @@ if __name__ == "__main__":
         choices=["gpt2-medium", "gpt2-large", "gpt2-xl", "EleutherAI/gpt-j-6B"],
         default="gpt2-xl",
         help="Model to edit.",
-        required=True,
-    )
-    parser.add_argument(
-        "--hparams_fname",
-        type=str,
-        default="gpt2-xl.json",
-        help="Name of hyperparameters file, located in the hparams/<alg_name> folder.",
         required=True,
     )
     parser.add_argument(
