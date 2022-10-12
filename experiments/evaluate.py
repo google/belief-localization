@@ -101,7 +101,7 @@ def ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, ove
   return exp_name
 
 def make_editing_results_df(exp_name, n=1000):
-  run_dir = os.path.join('{BASE_DIR}/results/', exp_name)
+  run_dir = os.path.join(f'{BASE_DIR}/results/', exp_name)
   dataframes = []
   for case_id in range(n):
     case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
