@@ -2,9 +2,9 @@ import json
 import os
 import shutil
 import collections
+import time
 from google.cloud import storage
 from pathlib import Path
-from time import time
 from typing import Tuple, Union
 
 import torch
