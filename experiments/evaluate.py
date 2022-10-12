@@ -295,6 +295,7 @@ def main(
                 else dict()
             )
             with torch.enable_grad():
+              import pdb; pdb.set_trace()
               edited_model, weights_copy = apply_algo(
                   model,
                   tok,
