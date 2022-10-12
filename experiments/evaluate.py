@@ -405,8 +405,9 @@ if __name__ == "__main__":
         mt = ModelAndTokenizer(model_name, low_cpu_mem_usage=mem_usage, torch_dtype=torch_dtype)
         torch.cuda.empty_cache()
         mt.model.eval().cuda()
-        mt.tokenizer.pad_token = mt.tokenizer.eos_token
-        mt.tokenizer.pad_token_id = mt.tokenizer.eos_token_id
+        mt.tokenizer.add_special_tokens({'pad_token' : mt.tokenizer.eos_token})
+        # mt.tokenizer.pad_token = mt.tokenizer.eos_token
+        # mt.tokenizer.pad_token_id = mt.tokenizer.eos_token_id
     else:
         model = GPTNeoXForCausalLM.from_pretrained("EleutherAI/gpt-neox-20b", 
                                                     device_map={
@@ -421,6 +422,7 @@ if __name__ == "__main__":
         model.eval().cuda()
         tokenizer = GPTNeoXTokenizerFast.from_pretrained("EleutherAI/gpt-neox-20b")
         mt = ModelAndTokenizer(model=model, tokenizer=tokenizer, torch_dtype=torch_dtype)
+        mt.tokenizer.add_special_tokens({'pad_token' : mt.tokenizer.eos_token})
 
     # set experiment args
     RUN_EXPERIMENT = args.run # set to false to just collect results
