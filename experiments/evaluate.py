@@ -67,6 +67,14 @@ def get_override_hparams(window_size, central_layer, alg_name):
         'v_num_grad_steps': 4,
         'v_lr': 0.1
         }
+  elif central_layer = -1:
+      assert window_size == 1
+      assert alg_name == 'FT'
+      return_dict = {
+          'lr': 1e-3,
+          'num_steps': 100,
+          'norm_constraint': .03
+      }
   else:
     layer = central_layer
     window = window_size
@@ -441,7 +449,7 @@ if __name__ == "__main__":
         central_layers = list(range(0, 28, 4)) + [5, 27]
     num_layers = mt.num_layers
     window_sizes=[1]
-    central_layers=[-1]
+    central_layers=[1]
     print("Starting sweep with hparams:")
     print("- window_sizes: ", window_sizes)
     print("- central_layers: ", central_layers)
@@ -475,7 +483,10 @@ if __name__ == "__main__":
     # combine and save results
     results_df = pd.concat(results_dfs)
     _model_name = model_name.split('/')[-1]
-    file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_sweep_n{num_points}.csv'
+    if len(central_layers) > 1:
+        file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_sweep_n{num_points}.csv'
+    else:
+        file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_layer-{central_layers[0]}_n{num_points}.csv'
     save_path = f'{BASE_DIR}/results/{file_name}'
     results_df.to_csv(save_path, index=False)
     # upload results csv to google bucket    
