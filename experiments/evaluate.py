@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 import collections
-import files
+from google.cloud import storage
 from pathlib import Path
 from time import time
 from typing import Tuple, Union
@@ -41,6 +41,8 @@ DS_DICT = {
     "cf": (CounterFactDataset, compute_rewrite_quality_counterfact),
     "zsre": (MENDQADataset, compute_rewrite_quality_zsre),
 }
+
+BASE_DIR='/home/peterhase/'
 
 def get_override_hparams(window_size, central_layer, alg_name):
   if window_size == 1:
@@ -83,7 +85,7 @@ def ROME_experiment_name(model_name, alg_name, ds_name, hparams_to_add):
 
 def ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, override_hparams, hparams_class):
   _model_name = model_name.replace('/', '_')
-  params_path = os.path.join('/content/rome/hparams/', alg_name, f"{_model_name}.json")
+  params_path = os.path.join('{BASE_DIR}/rome/hparams/', alg_name, f"{_model_name}.json")
   if alg_name == 'FT':
     params_path = params_path.replace('.json', '_constr.json')
   hparams = hparams_class.from_json(params_path)
@@ -98,7 +100,7 @@ def ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, ove
   return exp_name
 
 def make_editing_results_df(exp_name, n=1000):
-  run_dir = os.path.join('/content/results/', exp_name)
+  run_dir = os.path.join('{BASE_DIR}/results/', exp_name)
   dataframes = []
   for case_id in range(n):
     case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
@@ -216,7 +218,7 @@ def main(
 
     # Get run hyperparameters
     _model_name = model_name.replace('/', '_')
-    params_path = os.path.join('/content/rome/hparams/', alg_name, f"{_model_name}.json")
+    params_path = os.path.join('{BASE_DIR}/rome/hparams/', alg_name, f"{_model_name}.json")
     if alg_name == 'FT':
       params_path = params_path.replace('.json', '_constr.json')
     hparams = params_class.from_json(params_path)
@@ -231,7 +233,7 @@ def main(
                                     alg_name,
                                     ds_name,
                                     important_hparams)
-    run_dir = f'/content/results/{exp_name}'
+    run_dir = f'{BASE_DIR}/results/{exp_name}'
     os.makedirs(run_dir, exist_ok=True)
     print(f"Results will be stored at {run_dir}")
     # copy hparams to results dir
@@ -439,8 +441,8 @@ if __name__ == "__main__":
     if '6B' in model_name:
         central_layers = list(range(0, 28, 4)) + [5, 27]
     num_layers = mt.num_layers
-    # window_sizes=[1, 10]
-    # central_layers=[27]
+    window_sizes=[1]
+    central_layers=[-1]
 
     # main experiment loop
     results_dfs = []
@@ -460,18 +462,23 @@ if __name__ == "__main__":
                     verbose=False,
                     overwrite=False,
                 )
-            elif not RUN_EXPERIMENT:
-                exp_name = ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, override_hparams, hparams_class)
-                editing_results_df = make_editing_results_df(exp_name, n=num_points)
-                editing_results_df['edit_method'] = alg_name
-                editing_results_df['edit_central_layer'] = central_layer
-                editing_results_df['edit_window_size'] = window_size
-                results_dfs.append(editing_results_df)
+            # accumulate reuslts
+            exp_name = ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, override_hparams, hparams_class)
+            editing_results_df = make_editing_results_df(exp_name, n=num_points)
+            editing_results_df['edit_method'] = alg_name
+            editing_results_df['edit_central_layer'] = central_layer
+            editing_results_df['edit_window_size'] = window_size
+            results_dfs.append(editing_results_df)
+    
+    # combine and save results
+    results_df = pd.concat(results_dfs)
+    _model_name = model_name.split('/')[-1]
+    file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_sweep_n{num_points}.csv'
+    save_path = f'{BASE_DIR}/results/{file_name}'
+    results_df.to_csv(save_path, index=False)
+    # upload results csv to google bucket    
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket('research-brain-belief-localization-xgcp')
+    blob = bucket.blob(f'output/{file_name}')
+    blob.upload_from_filename(save_path)
 
-    if not RUN_EXPERIMENT:
-        results_df = pd.concat(results_dfs)
-        _model_name = model_name.split('/')[-1]
-        save_path = f'/content/results/{_model_name}_{alg_name}_outputs_{ds_name}_editing_sweep_n{num_points}.csv'
-        results_df.to_csv(save_path, index=False)
-        files.download(save_path)
-        results_df

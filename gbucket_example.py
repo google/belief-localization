@@ -7,7 +7,7 @@ def gcs_test():
   bucket = storage_client.get_bucket('research-brain-belief-localization-xgcp')
   blob = bucket.blob('output/dummy.txt')
   blob.upload_from_string('Hi. This is a test.')
-
+#   blob.upload_from_filename('local_file_txt')
   print('Successfully created file: research-brain-belief-localization-xgcp/output/dummy.txt')
 
 gcs_test()
