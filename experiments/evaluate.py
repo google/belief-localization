@@ -67,7 +67,7 @@ def get_override_hparams(window_size, central_layer, alg_name):
         'v_num_grad_steps': 4,
         'v_lr': 0.1
         }
-  elif central_layer = -1:
+  elif central_layer == -1:
       assert window_size == 1
       assert alg_name == 'FT'
       return_dict = {
@@ -383,6 +383,11 @@ if __name__ == "__main__":
         help="Truncate CounterFact to first n records.",
     )
     parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite previous experiment results",
+    )
+    parser.add_argument(
         "--skip_generation_tests",
         dest="skip_generation_tests",
         action="store_true",
@@ -402,7 +407,7 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
-    parser.set_defaults(skip_generation_tests=True, conserve_memory=False)
+    parser.set_defaults(skip_generation_tests=True, conserve_memory=False, overwrite=False)
     args = parser.parse_args()
 
     # load model
@@ -470,7 +475,7 @@ if __name__ == "__main__":
                     mt=mt,
                     override_hparams=override_hparams,
                     verbose=False,
-                    overwrite=False,
+                    overwrite=args.overwrite,
                 )
             # accumulate reuslts
             exp_name = ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, override_hparams, hparams_class)
