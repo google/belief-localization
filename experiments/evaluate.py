@@ -9,6 +9,7 @@ from typing import Tuple, Union
 
 import torch
 import pandas as pd
+import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
 # from transformers import GPTNeoXForCausalLM, GPTNeoXTokenizerFast
 
