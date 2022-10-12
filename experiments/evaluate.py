@@ -439,6 +439,7 @@ if __name__ == "__main__":
             tokenizer = GPTNeoXTokenizerFast.from_pretrained("EleutherAI/gpt-neox-20b")
             mt = ModelAndTokenizer(model=model, tokenizer=tokenizer, torch_dtype=torch_dtype)
             mt.tokenizer.add_special_tokens({'pad_token' : mt.tokenizer.eos_token})
+        # num_layers = mt.num_layers
 
     # set experiment args
     RUN_EXPERIMENT = args.run # set to false to just collect results
@@ -451,9 +452,10 @@ if __name__ == "__main__":
     window_sizes = [1]
     if 'gpt2' in model_name:
         central_layers = list(range(0, 48, 4)) + [17, 47]
+        num_layers = 48
     if '6B' in model_name:
         central_layers = list(range(0, 28, 4)) + [5, 27]
-    num_layers = mt.num_layers
+        num_layers = 28
     window_sizes=[1]
     central_layers=[-1]
     print("Starting sweep with hparams:")
