@@ -400,6 +400,7 @@ if __name__ == "__main__":
     model_name = args.model_name
     torch_dtype = torch.float16 if '20b' in model_name else None
     mem_usage = True
+    print("Loading model...")
     if '20b' not in model_name:
         mt = ModelAndTokenizer(model_name, low_cpu_mem_usage=mem_usage, torch_dtype=torch_dtype)
         torch.cuda.empty_cache()
@@ -439,7 +440,7 @@ if __name__ == "__main__":
     central_layers=[-1]
 
     # main experiment loop
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     results_dfs = []
     for window_size in window_sizes:
         for central_layer in central_layers:
