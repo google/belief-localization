@@ -396,7 +396,6 @@ if __name__ == "__main__":
         "--run",
         default=1,
         choices=[0,1],
-        bool=True,
     )
     parser.set_defaults(skip_generation_tests=True, conserve_memory=False)
     args = parser.parse_args()
