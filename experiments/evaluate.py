@@ -86,7 +86,7 @@ def ROME_experiment_name(model_name, alg_name, ds_name, hparams_to_add):
 
 def ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, override_hparams, hparams_class):
   _model_name = model_name.replace('/', '_')
-  params_path = os.path.join(f'{CODE_DIR}/rome/hparams/', alg_name, f"{_model_name}.json")
+  params_path = os.path.join(f'{CODE_DIR}/hparams/', alg_name, f"{_model_name}.json")
   if alg_name == 'FT':
     params_path = params_path.replace('.json', '_constr.json')
   hparams = hparams_class.from_json(params_path)
@@ -219,7 +219,7 @@ def main(
 
     # Get run hyperparameters
     _model_name = model_name.replace('/', '_')
-    params_path = os.path.join(f'{CODE_DIR}/rome/hparams/', alg_name, f"{_model_name}.json")
+    params_path = os.path.join(f'{CODE_DIR}/hparams/', alg_name, f"{_model_name}.json")
     if alg_name == 'FT':
       params_path = params_path.replace('.json', '_constr.json')
     hparams = params_class.from_json(params_path)
