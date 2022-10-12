@@ -128,7 +128,7 @@ def make_editing_results_df(exp_name, n=1000):
         'prompt': [prompt],
         'target': [target],
         'subject' : [rewrite_data['subject']],
-        # 'request' : rewrite_data['target_new'],
+        'request' : [rewrite_data['target_new']],
     }
     cur_sum = collections.defaultdict(lambda: [])
     data = record
@@ -501,5 +501,5 @@ if __name__ == "__main__":
     blob.upload_from_filename(save_path)
 
     print(f"saving csv at {save_path}...")
-    print(results_df)
+    print(results_df.loc[:,['case_id', 'subject', 'target', 'request', 'post_rewrite_success', 'post_neighbor_success', 'post_paraphrase_success', 'post_score']])
 
