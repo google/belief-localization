@@ -45,10 +45,18 @@ DS_DICT = {
 }
 
 CODE_DIR='/home/peterhase/belief-loc'
-BASE_DIR='/home/peterhase/'
+BASE_DIR='/home/peterhase'
 
 def get_override_hparams(window_size, central_layer, alg_name):
-  if window_size == 1:
+  if central_layer == -1:
+      assert window_size == 1
+      assert alg_name == 'FT'
+      return_dict = {
+          'lr': 1e-3,
+          'num_steps': 200,
+          'norm_constraint': .05
+      }
+  elif window_size == 1:
     return_dict = {'layers' : [central_layer]}
     if alg_name == "FT":
       return_dict['norm_constraint'] = 1e-4
@@ -67,14 +75,6 @@ def get_override_hparams(window_size, central_layer, alg_name):
         'v_num_grad_steps': 4,
         'v_lr': 0.1
         }
-  elif central_layer == -1:
-      assert window_size == 1
-      assert alg_name == 'FT'
-      return_dict = {
-          'lr': 1e-3,
-          'num_steps': 100,
-          'norm_constraint': .03
-      }
   else:
     layer = central_layer
     window = window_size
@@ -128,7 +128,7 @@ def make_editing_results_df(exp_name, n=1000):
         'prompt': [prompt],
         'target': [target],
         'subject' : [rewrite_data['subject']],
-        'request' : [rewrite_data['target_new']],
+        'request' : [rewrite_data['target_new']['str']],
     }
     cur_sum = collections.defaultdict(lambda: [])
     data = record
@@ -331,7 +331,7 @@ def main(
                     nethook.get_parameter(model, k)[...] = v.to("cuda")
             metrics["pre"] = ds_eval_method(model, tok, record, snips, vec)
 
-            print("metrics: ", metrics)
+            # print("metrics: ", metrics)
             print("Evaluation took", time.time() - start)
             # Dump metrics in .json
             with open(case_result_path, "w") as f:

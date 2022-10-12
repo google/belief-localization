@@ -96,9 +96,6 @@ def execute_ft(
     # Update loop: intervene at layers simultaneously
     loss_meter = AverageMeter()
     for it in range(hparams.num_steps):
-        print(20 * "=")
-        print(f"Epoch: {it}")
-        print(20 * "=")
         loss_meter.reset()
 
         for txt, tgt in zip(
@@ -120,7 +117,7 @@ def execute_ft(
                 1
             ) / loss_mask.sum(1)
             loss = loss.mean()
-            print(f"Batch loss {loss.item()}")
+            # print(f"Batch loss at epoch {it}: {loss.item():.4f}")
             loss_meter.update(loss.item(), n=bs)
 
             if loss.item() >= 1e-2:
@@ -134,8 +131,7 @@ def execute_ft(
                         v[...] = torch.clamp(
                             v, min=weights_copy[k] - eps, max=weights_copy[k] + eps
                         )
-
-        print(f"Total loss {loss_meter.avg}")
+        print(f"Total loss at epoch {it}: {loss_meter.avg:.4f}")
 
         if loss_meter.avg < 1e-2:
             break
@@ -162,7 +158,6 @@ def chunks(arr, n):
             chunk = []
     if len(chunk) > 0:
         yield chunk
-
 
 class AverageMeter:
     """Computes and stores the average and current value"""
