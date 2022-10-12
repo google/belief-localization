@@ -394,6 +394,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--run",
+        type=int,
         default=1,
         choices=[0,1],
     )
