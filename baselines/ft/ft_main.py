@@ -74,6 +74,8 @@ def execute_ft(
         for layer in hparams.layers
         if hparams.rewrite_module_tmp.format(layer) in n
     }
+    if min(hparams.layers) == -1:
+        weights.update({n: p for n,p in model.named_parameters() if 'embedding' in n})
     # Save old weights for future restoration
     weights_copy = {k: v.detach().clone() for k, v in weights.items()}
     print(f"Weights to be updated: {list(weights.keys())}")
