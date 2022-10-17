@@ -76,7 +76,7 @@ def compute_rewrite_quality_counterfact(
             ]
         )
     }
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     if snips is not None:
         # Gather reference texts
         rel_id = record["requested_rewrite"]["relation_id"]
@@ -84,8 +84,9 @@ def compute_rewrite_quality_counterfact(
         essence_texts = [
             x["text"]
             for x in snips[rel_id][target_new["id"]]
-            if x["name"] == record["requested_rewrite"]["subject"]
+            if x["name"] == subject
         ]
+        print(essence_texts)
         gen_stats = test_generation(
             model,
             tok,
