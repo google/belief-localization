@@ -284,10 +284,6 @@ def main(
     ds = ds_class(DATA_DIR, size=dataset_size_limit, tok=tok)
     # Iterate through dataset
     for record in ds:
-        print("checking data paraphrases look correct?")
-        print(record["paraphrase_prompts"])
-        print(record["generation_prompts"])
-        import pdb; pdb.set_trace()
         case_id = record["case_id"] if 'case_id' in record else 'known_id'
         case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
         rewrite_this_point = overwrite or not os.path.exists(case_result_path)
