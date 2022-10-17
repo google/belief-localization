@@ -284,6 +284,8 @@ def main(
     ds = ds_class(DATA_DIR, size=dataset_size_limit, tok=tok)
     # Iterate through dataset
     for record in ds:
+        print("checking data paraphrases look correct?")
+        import pdb; pdb.set_trace()
         case_id = record["case_id"] if 'case_id' in record else 'known_id'
         case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
         rewrite_this_point = overwrite or not os.path.exists(case_result_path)
@@ -292,12 +294,12 @@ def main(
             # generate essence_texts for evaluation if needed
             if do_essence_tests or not skip_generation_tests:
                 subject = record["requested_rewrite"]['subject']
-                rewrite_prompt = record["requested_rewrite"]["prompt"].format(subject)
+                essence_prompt = "{} is a".format(subject)
                 if len(snips.names_to_samples[subject]) == 0:
                     essence_texts = generate_fast(
                         model,
                         tok,
-                        [rewrite_prompt],
+                        [essence_prompt],
                         n_gen_per_prompt=5,
                         max_out_len=100,
                     )
@@ -320,7 +322,7 @@ def main(
                     f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
                     f"\n Paraphrases: {paraphrase_prompts[:2]}"
                     f"\n Neighbors: {neighborhood_prompts[:2]}"
-                    f"\n Essence texts: {[x[:60] for x in snips.names_to_samples[request['subject']][:2]]}"
+                    f"\n Essence texts: {[x[:80] for x in snips.names_to_samples[request['subject']][:2]]}"
                 )
               edited_model, weights_copy = apply_algo(
                   model,
