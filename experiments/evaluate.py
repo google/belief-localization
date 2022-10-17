@@ -290,11 +290,11 @@ def main(
         if rewrite_this_point:
             
             # generate essence_texts for evaluation if needed
-            if do_essence_tests or not skip_generation_tests:
-                print("GENERATING ESSENCE TEXTS")
+            if do_essence_tests or not skip_generation_tests:                
                 subject = record["requested_rewrite"]['subject']
                 essence_prompt = "{} is a".format(subject)
                 if len(snips.names_to_samples[subject]) == 0:
+                    print("GENERATING ESSENCE TEXTS")
                     essence_texts = generate_fast(
                         model,
                         tok,
@@ -303,6 +303,8 @@ def main(
                         max_out_len=100,
                     )
                     snips.names_to_samples[subject].extend(essence_texts)
+                else:
+                    print("using wikipedia essence texts")
             
             # Compute weight changes + record weights that changed
             start = time.time()
