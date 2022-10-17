@@ -83,9 +83,7 @@ def compute_rewrite_quality_counterfact(
         consistency_texts = [x["text"] for x in snips[rel_id][target_new["id"]]]
         # essence_texts = snips.snippets_list
         essence_texts = snips.names_to_samples[subject]
-        # generate essence texts if we do not have any for this subject
         print(essence_texts)
-        # use max of 5 essence texts
         if len(essence_texts) > 5:
             essence_texts = essence_texts[:5]
         if skip_generation_tests:
@@ -176,7 +174,8 @@ def test_generation(
     if len(essence_texts) > 0:
         ppls = []
         for essence_text in essence_texts:
-            ppl = perplexity(model, tok, essence_text, max_input_length=80)
+            ppl = perplexity(model, tok, essence_text, max_input_length=100)
+            ppls.append(ppl)
         avg_ppl = np.mean(ppls)
         return_dict.update({"essence_score": avg_ppl, "essence_text": essence_texts})
 

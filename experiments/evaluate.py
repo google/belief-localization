@@ -301,9 +301,9 @@ def main(
             print("Execution took", exec_time)
 
             # get essence_tests samples if needed for the point
-            subject = record["requested_rewrite"]['subject']
-            rewrite_prompt = record["requested_rewrite"]["prompt"].format(subject)
             if do_essence_tests or not skip_generation_tests:
+                subject = record["requested_rewrite"]['subject']
+                rewrite_prompt = record["requested_rewrite"]["prompt"].format(subject)
                 essence_texts = generate_fast(
                     model,
                     tok,
@@ -311,7 +311,8 @@ def main(
                     n_gen_per_prompt=5,
                     max_out_len=100,
                 )
-                snips.names_to_samples['subject'].extend(essence_texts)
+                snips.names_to_samples[subject].extend(essence_texts)
+                # import pdb; pdb.set_trace()
 
             # Execute evaluation suite
             start = time.time()
