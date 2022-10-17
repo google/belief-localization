@@ -505,6 +505,8 @@ if __name__ == "__main__":
         file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_sweep_n{num_points}.csv'
     else:
         _layer = 'embeds' if central_layers[0] == -1 else central_layers[0]
+        print(central_layers)
+        print(_layer)
         file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_layer-{_layer}_n{num_points}.csv'
     save_path = f'{BASE_DIR}/results/{file_name}'
     results_df.to_csv(save_path, index=False)
