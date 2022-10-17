@@ -82,12 +82,8 @@ def compute_rewrite_quality_counterfact(
         # Gather reference texts
         rel_id = record["requested_rewrite"]["relation_id"]
         consistency_texts = [x["text"] for x in snips[rel_id][target_new["id"]]]
-        essence_texts = [
-            snip["text"]
-            for rel_to_obj_dict in snips
-            for snip in rel_to_obj_dict
-            if snip["name"] == subject
-        ]
+        # essence_texts = snips.snippets_list
+        essence_texts = snips.names_to_samples[subject]
         print(essence_texts)
         if len(essence_texts) > 0:
             pdb.set_trace()

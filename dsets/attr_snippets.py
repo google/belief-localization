@@ -30,13 +30,17 @@ class AttributeSnippets:
             snippets_list = json.load(f)
 
         snips = collections.defaultdict(lambda: collections.defaultdict(list))
+        name_to_samples = collections.defaultdict(lambda: collections.defaultdict(list))
 
         for el in snippets_list:
             rid, tid = el["relation_id"], el["target_id"]
             for sample in el["samples"]:
                 snips[rid][tid].append(sample)
+                name_to_samples[sample['name']].append(sample['text'])
+
 
         self._data = snips
+        self.names_to_samples = name_to_samples
         self.snippets_list = snippets_list
 
     def __getitem__(self, item):

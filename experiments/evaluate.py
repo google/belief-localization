@@ -270,9 +270,6 @@ def main(
     print("Loading dataset, attribute snippets, tf-idf data")
     snips = AttributeSnippets(DATA_DIR)
     vec = get_tfidf_vectorizer(DATA_DIR) if not skip_generation_tests else None
-    # drop items from snips as directed
-    # if skip_generation_tests:
-        # snips.pop('')
 
     ds_class, ds_eval_method = DS_DICT[ds_name]
     ds = ds_class(DATA_DIR, size=dataset_size_limit, tok=tok)
