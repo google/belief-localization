@@ -37,7 +37,9 @@ class AttributeSnippets:
             for sample in el["samples"]:
                 snips[rid][tid].append(sample)
                 name_to_samples[sample['name']].append(sample['text'])
-
+                print(sample['name'])
+                print(sample['text'])
+                import pdb; pdb.set_trace()
 
         self._data = snips
         self.names_to_samples = name_to_samples
