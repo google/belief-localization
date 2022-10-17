@@ -25,6 +25,7 @@ def compute_rewrite_quality_counterfact(
     record: typing.Dict,
     snips: AttributeSnippets,
     vec: TfidfVectorizer,
+    skip_generation_tests: bool,
 ) -> typing.Dict:
     """
     Given a rewritten model, computes generalization and specificity metrics for
@@ -87,6 +88,9 @@ def compute_rewrite_quality_counterfact(
             if x["name"] == subject
         ]
         print(essence_texts)
+        if skip_generation_tests:
+            consistency_texts = []
+            vec = None
         gen_stats = test_generation(
             model,
             tok,
