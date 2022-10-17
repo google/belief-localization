@@ -288,6 +288,21 @@ def main(
         case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
         rewrite_this_point = overwrite or not os.path.exists(case_result_path)
         if rewrite_this_point:
+            
+            # generate essence_texts for evaluation if needed
+            if do_essence_tests or not skip_generation_tests:
+                subject = record["requested_rewrite"]['subject']
+                rewrite_prompt = record["requested_rewrite"]["prompt"].format(subject)
+                if len(snips.names_to_samples[subject]) == 0:
+                    essence_texts = generate_fast(
+                        model,
+                        tok,
+                        [rewrite_prompt],
+                        n_gen_per_prompt=5,
+                        max_out_len=100,
+                    )
+                    snips.names_to_samples[subject].extend(essence_texts)
+            
             # Compute weight changes + record weights that changed
             start = time.time()
             args_conserve_memory = (
@@ -296,10 +311,21 @@ def main(
                 else dict()
             )
             with torch.enable_grad():
+              request = record["requested_rewrite"]
+              paraphrase_prompts = record["paraphrase_prompts"]
+              neighborhood_prompts = record["neighborhood_prompts"]
+              if verbose:
+                print(
+                    "Updating point:"
+                    f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
+                    f"Paraphrases: {paraphrase_prompts[:2]}"
+                    f"Neighbors: {neighborhood_prompts[:2]}"
+                    f"Essence texts: {snips.names_to_samples[request['subject']][:2]}"
+                )
               edited_model, weights_copy = apply_algo(
                   model,
                   tok,
-                  [record["requested_rewrite"]],
+                  [request],
                   hparams,
                   copy=False,
                   return_orig_weights=True,
@@ -307,20 +333,6 @@ def main(
               )
             exec_time = time.time() - start
             print("Execution took", exec_time)
-
-            # get essence_tests samples if needed for the point
-            if do_essence_tests or not skip_generation_tests:
-                subject = record["requested_rewrite"]['subject']
-                rewrite_prompt = record["requested_rewrite"]["prompt"].format(subject)
-                essence_texts = generate_fast(
-                    model,
-                    tok,
-                    [rewrite_prompt],
-                    n_gen_per_prompt=5,
-                    max_out_len=100,
-                )
-                snips.names_to_samples[subject].extend(essence_texts)
-                # import pdb; pdb.set_trace()
 
             # Execute evaluation suite
             start = time.time()
@@ -399,6 +411,11 @@ if __name__ == "__main__":
         help="Overwrite previous experiment results",
     )
     parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="More printing during editing",
+    )
+    parser.add_argument(
         "--do_essence_tests",
         action="store_true",
         help="Do the essence drift generation test regardless of args.skip_generation_tests",
@@ -423,7 +440,7 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
-    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=False, overwrite=False)
+    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=False, verbose=False, overwrite=False)
     args = parser.parse_args()
 
     # load model
@@ -495,7 +512,7 @@ if __name__ == "__main__":
                     conserve_memory=False,
                     mt=mt,
                     override_hparams=override_hparams,
-                    verbose=False,
+                    verbose=args.verbose,
                     overwrite=args.overwrite,
                 )
             # accumulate reuslts
