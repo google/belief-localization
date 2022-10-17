@@ -93,7 +93,7 @@ def ROME_experiment_name(model_name, alg_name, ds_name, hparams_to_add):
   for k,v in hparams_to_add.items():
     _v = str(v).replace(", ", "-")
     if _v == "-1":
-        _v = "embed"
+        _v = "embeds"
     exp_name += f"_{k[:5]}-{_v}"
   return exp_name
 
@@ -504,7 +504,8 @@ if __name__ == "__main__":
     if len(central_layers) > 1:
         file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_sweep_n{num_points}.csv'
     else:
-        file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_layer-{central_layers[0]}_n{num_points}.csv'
+        _layer = 'embeds' if central_layers[0] == -1 else central_layers[0]
+        file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_layer-{_layer}_n{num_points}.csv'
     save_path = f'{BASE_DIR}/results/{file_name}'
     results_df.to_csv(save_path, index=False)
     # upload results csv to google bucket    
