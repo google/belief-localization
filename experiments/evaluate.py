@@ -285,6 +285,8 @@ def main(
     # Iterate through dataset
     for record in ds:
         print("checking data paraphrases look correct?")
+        print(record["paraphrase_prompts"])
+        print(record["generation_prompts"])
         import pdb; pdb.set_trace()
         case_id = record["case_id"] if 'case_id' in record else 'known_id'
         case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
