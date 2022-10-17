@@ -55,7 +55,7 @@ def get_override_hparams(window_size, central_layer, alg_name):
           'lr': 1e-3,
           'num_steps': 200,
           'norm_constraint': .05,
-          'layers' = [-1],
+          'layers': [-1],
       }
   elif window_size == 1:
     return_dict = {'layers' : [central_layer]}
