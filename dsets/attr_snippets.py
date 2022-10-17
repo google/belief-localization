@@ -32,6 +32,7 @@ class AttributeSnippets:
         snips = collections.defaultdict(lambda: collections.defaultdict(list))
         name_to_samples = collections.defaultdict(lambda: [])
 
+        import pdb; pdb.set_trace()
         for el in snippets_list:
             rid, tid = el["relation_id"], el["target_id"]
             for sample in el["samples"]:

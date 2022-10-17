@@ -290,7 +290,8 @@ def main(
         if rewrite_this_point:
             
             # generate essence_texts for evaluation if needed
-            if do_essence_tests or not skip_generation_tests:                
+            if do_essence_tests or not skip_generation_tests:
+                import pdb; pdb.set_trace()                
                 subject = record["requested_rewrite"]['subject']
                 essence_prompt = "{} is a".format(subject)
                 if len(snips.names_to_samples[subject]) == 0:
