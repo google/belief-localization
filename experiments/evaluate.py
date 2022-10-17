@@ -141,7 +141,6 @@ def make_editing_results_df(exp_name, n=1000):
         # record essence_drift metric
         if 'essence_score' in data[prefix]:
             cur_sum[f"{prefix}_essence_ppl"] = data[prefix]['essence_score']
-            cur_sum[f"{prefix}_essence_prob"] = np.exp(-data[prefix]['essence_score'])
         # Probability metrics for which new should be lower (better) than true
         for key in ["rewrite_prompts_probs", "paraphrase_prompts_probs"]:
             if prefix not in data or key not in data[prefix]:
@@ -213,7 +212,6 @@ def make_editing_results_df(exp_name, n=1000):
     # add post-pre ppl scores
     if 'essence_score' in data['post']:
         cur_sum['essence_ppl_diff'] = cur_sum['post_essence_ppl'] - cur_sum['pre_essence_ppl'] # lower is better
-        cur_sum['essence_prob_diff'] = cur_sum['post_essence_prob'] - cur_sum['pre_essence_prob'] # higher is better
     # add ROME metrics to record_dict and append to dataframes
     record_dict.update(cur_sum)
     df = pd.DataFrame(record_dict)
@@ -549,5 +547,5 @@ if __name__ == "__main__":
     blob.upload_from_filename(save_path)
 
     print(f"saving csv at {save_path}...")
-    print(results_df.loc[:,['case_id', 'subject', 'target', 'request', 'post_rewrite_success', 'post_neighborhood_success', 'post_paraphrase_success', 'post_score', 'essence_ppl_diff', 'essence_prob_diff']])
+    print(results_df.loc[:,['case_id', 'subject', 'target', 'request', 'post_rewrite_success', 'post_neighborhood_success', 'post_paraphrase_success', 'post_score', 'essence_ppl_diff']])
 
