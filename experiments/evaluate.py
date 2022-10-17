@@ -291,6 +291,7 @@ def main(
             
             # generate essence_texts for evaluation if needed
             if do_essence_tests or not skip_generation_tests:
+                print("GENERATING ESSENCE TEXTS")
                 subject = record["requested_rewrite"]['subject']
                 essence_prompt = "{} is a".format(subject)
                 if len(snips.names_to_samples[subject]) == 0:
