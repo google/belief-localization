@@ -470,6 +470,7 @@ if __name__ == "__main__":
                     model_name=model_name,
                     ds_name=ds_name,
                     dataset_size_limit=num_points,
+                    do_essence_tests=args.do_essence_tests,
                     skip_generation_tests=args.skip_generation_tests,
                     conserve_memory=False,
                     mt=mt,
