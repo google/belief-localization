@@ -29,6 +29,7 @@ from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counte
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from rome import ROMEHyperParams, apply_rome_to_model
 from util import nethook
+from util.generate import generate_fast
 from util.globals import *
 
 ALG_DICT = {
@@ -298,6 +299,19 @@ def main(
               )
             exec_time = time.time() - start
             print("Execution took", exec_time)
+
+            # get essence_tests samples if needed for the point
+            subject = record["requested_rewrite"]['subject']
+            rewrite_prompt = record["requested_rewrite"]["prompt"].format(subject)
+            if do_essence_tests or not skip_generation_tests:
+                essence_texts = generate_fast(
+                    model,
+                    tok,
+                    [rewrite_prompt],
+                    n_gen_per_prompt=5,
+                    max_out_len=100,
+                )
+                snips.names_to_samples['subject'].extend(essence_texts)
 
             # Execute evaluation suite
             start = time.time()

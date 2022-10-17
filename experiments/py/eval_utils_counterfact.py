@@ -84,18 +84,7 @@ def compute_rewrite_quality_counterfact(
         # essence_texts = snips.snippets_list
         essence_texts = snips.names_to_samples[subject]
         # generate essence texts if we do not have any for this subject
-        if len(essence_texts) == 0:
-            import pdb; pdb.set_trace()
-            essence_texts = generate_fast(
-                model,
-                tok,
-                rewrite_prompts,
-                n_gen_per_prompt=5,
-                max_out_len=100,
-            )
         print(essence_texts)
-        if len(essence_texts) > 0:
-            pdb.set_trace()
         # use max of 5 essence texts
         if len(essence_texts) > 5:
             essence_texts = essence_texts[:5]
