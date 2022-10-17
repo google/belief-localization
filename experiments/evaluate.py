@@ -52,9 +52,9 @@ def get_override_hparams(window_size, central_layer, alg_name):
       assert window_size == 1
       assert alg_name == 'FT'
       return_dict = {
-          'lr': 1e-3,
-          'num_steps': 200,
-          'norm_constraint': .05,
+          'lr': 1e-4,
+          'num_steps': 100,
+          'norm_constraint': .01,
           'layers': [-1],
       }
   elif window_size == 1:
