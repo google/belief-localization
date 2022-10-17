@@ -38,7 +38,7 @@ class AttributeSnippets:
                 snips[rid][tid].append(sample)
                 text = sample['text']
                 if not text in name_to_samples[sample['name']]:
-                    name_to_samples[sample['name']].append()
+                    name_to_samples[sample['name']].append(text)
                 
         self._data = snips
         self.names_to_samples = name_to_samples
