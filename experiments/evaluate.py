@@ -138,6 +138,9 @@ def make_editing_results_df(exp_name, n=1000):
     data = record
     # compute ROME metrics
     for prefix in ["pre", "post"]:
+        # record essence_drift metric
+        import pdb; pdb.set_trace()
+        # cur_sum[f"{prefix}_essence_ppl"] = 
         # Probability metrics for which new should be lower (better) than true
         for key in ["rewrite_prompts_probs", "paraphrase_prompts_probs"]:
             if prefix not in data or key not in data[prefix]:

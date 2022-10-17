@@ -83,7 +83,6 @@ def compute_rewrite_quality_counterfact(
         consistency_texts = [x["text"] for x in snips[rel_id][target_new["id"]]]
         # essence_texts = snips.snippets_list
         essence_texts = snips.names_to_samples[subject]
-        print(essence_texts)
         if len(essence_texts) > 5:
             essence_texts = essence_texts[:5]
         if skip_generation_tests:
