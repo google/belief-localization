@@ -318,9 +318,9 @@ def main(
                 print(
                     "Updating point:"
                     f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
-                    f"Paraphrases: {paraphrase_prompts[:2]}"
-                    f"Neighbors: {neighborhood_prompts[:2]}"
-                    f"Essence texts: {snips.names_to_samples[request['subject']][:2]}"
+                    f"\n Paraphrases: {paraphrase_prompts[:2]}"
+                    f"\n Neighbors: {neighborhood_prompts[:2]}"
+                    f"\n Essence texts: {[x[:60] for x in snips.names_to_samples[request['subject']][:2]]}"
                 )
               edited_model, weights_copy = apply_algo(
                   model,
@@ -530,6 +530,7 @@ if __name__ == "__main__":
         file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_sweep_n{num_points}.csv'
     else:
         _layer = 'embeds' if central_layers[0] == -1 else central_layers[0]
+        print("checking layer naming working properly:")
         print(central_layers)
         print(_layer)
         file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_layer-{_layer}_n{num_points}.csv'
