@@ -321,8 +321,10 @@ def main(
                     f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
                     f"\n Paraphrases: {paraphrase_prompts[:2]}"
                     f"\n Neighbors: {neighborhood_prompts[:2]}"
-                    f"\n Essence texts: {[x[:80] for x in snips.names_to_samples[request['subject']][:2]]}"
                 )
+                for text in snips.names_to_samples[request['subject']][:5]:
+                    print(f" Essence text: {[x[:200] for x in text]}")
+                
               edited_model, weights_copy = apply_algo(
                   model,
                   tok,
