@@ -91,6 +91,8 @@ def ROME_experiment_name(model_name, alg_name, ds_name, hparams_to_add):
   exp_name = f'{model_name}/{alg_name}_outputs_{ds_name}'
   for k,v in hparams_to_add.items():
     _v = str(v).replace(", ", "-")
+    if _v == "-1":
+        _v = "embed"
     exp_name += f"_{k[:5]}-{_v}"
   return exp_name
 
