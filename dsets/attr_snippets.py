@@ -36,7 +36,9 @@ class AttributeSnippets:
             rid, tid = el["relation_id"], el["target_id"]
             for sample in el["samples"]:
                 snips[rid][tid].append(sample)
-                name_to_samples[sample['name']].append(sample['text'])
+                text = sample['text']
+                if not text in name_to_samples[sample['name']]:
+                    name_to_samples[sample['name']].append()
                 
         self._data = snips
         self.names_to_samples = name_to_samples
