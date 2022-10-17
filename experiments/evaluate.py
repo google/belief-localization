@@ -54,7 +54,8 @@ def get_override_hparams(window_size, central_layer, alg_name):
       return_dict = {
           'lr': 1e-3,
           'num_steps': 200,
-          'norm_constraint': .05
+          'norm_constraint': .05,
+          'layers' = [-1],
       }
   elif window_size == 1:
     return_dict = {'layers' : [central_layer]}
@@ -470,7 +471,6 @@ if __name__ == "__main__":
     print("Starting sweep with hparams:")
     print("- window_sizes: ", window_sizes)
     print("- central_layers: ", central_layers)
-    import pdb; pdb.set_trace()
 
     # main experiment loop
     results_dfs = []
