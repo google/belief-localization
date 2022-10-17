@@ -77,16 +77,28 @@ def compute_rewrite_quality_counterfact(
             ]
         )
     }
-    import pdb; pdb.set_trace()
     if snips is not None:
         # Gather reference texts
         rel_id = record["requested_rewrite"]["relation_id"]
         consistency_texts = [x["text"] for x in snips[rel_id][target_new["id"]]]
         # essence_texts = snips.snippets_list
         essence_texts = snips.names_to_samples[subject]
+        # generate essence texts if we do not have any for this subject
+        if len(essence_texts) == 0:
+            import pdb; pdb.set_trace()
+            essence_texts = generate_fast(
+                model,
+                tok,
+                rewrite_prompts,
+                n_gen_per_prompt=5,
+                max_out_len=100,
+            )[0]
         print(essence_texts)
         if len(essence_texts) > 0:
             pdb.set_trace()
+        # use max of 5 essence texts
+        if len(essence_texts) > 5:
+            essence_texts = essence_texts[:5]
         if skip_generation_tests:
             consistency_texts = []
             vec = None
@@ -173,8 +185,11 @@ def test_generation(
             return_dict['reference_score'] = consistency_tfidf
 
     if len(essence_texts) > 0:
-        ppl = perplexity(model, tok, " ".join(essence_texts), max_input_length=100)
-        return_dict.update({"essence_score": ppl, "essence_text": essence_texts})
+        ppls = []
+        for essence_text in essence_texts:
+            ppl = perplexity(model, tok, essence_text, max_input_length=80)
+        avg_ppl = np.mean(ppls)
+        return_dict.update({"essence_score": avg_ppl, "essence_text": essence_texts})
 
     return return_dict
 
