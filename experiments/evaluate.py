@@ -220,6 +220,7 @@ def main(
     model_name: Union[str, Tuple],
     ds_name: str,
     dataset_size_limit: int,
+    do_essence_tests: bool,
     skip_generation_tests: bool,
     conserve_memory: bool,
     mt=None,
@@ -267,33 +268,14 @@ def main(
 
     # Load data
     print("Loading dataset, attribute snippets, tf-idf data")
-    snips = AttributeSnippets(DATA_DIR) if not skip_generation_tests else None
+    snips = AttributeSnippets(DATA_DIR)
     vec = get_tfidf_vectorizer(DATA_DIR) if not skip_generation_tests else None
+    # drop items from snips as directed
+    # if skip_generation_tests:
+        # snips.pop('')
 
     ds_class, ds_eval_method = DS_DICT[ds_name]
     ds = ds_class(DATA_DIR, size=dataset_size_limit, tok=tok)
-    # if using knowns data, load all of counterfact and limit to where cases are in knowns
-    if 'knowns' in ds_name:
-      ds_all = CounterFactDataset(DATA_DIR, size=dataset_size_limit, tok=tok)
-      ds_all_ids = [record['case_id'] for record in ds_all]
-      ds_all_prompts = []
-      for record in ds_all:
-        rewrite_data = record['requested_rewrite']
-        prompt = rewrite_data['prompt'].format(rewrite_data['subject'])
-        ds_all_prompts.append(prompt)
-      knowns_prompts = [record['prompt'] for record in ds]
-      new_ds = []
-      for i in range(len(ds_all)):
-        full_record = ds_all[i]
-        prompt = ds_all_prompts[i]
-        if prompt in knowns_prompts:
-          knowns_idx = knowns_prompts.index(prompt)
-          knowns_id = ds[knowns_idx]['known_id'] # should be same as knowns_idx
-          assert knowns_id == knowns_idx
-          full_record['known_id'] = knowns_id
-          new_ds.append(full_record)
-      ds = new_ds
-      print("FILTERED DATA TO ONLY ", len(ds), " ELEMENTS")
     # Iterate through dataset
     for record in ds:
         case_id = record["case_id"] if 'case_id' in record else 'known_id'
@@ -397,6 +379,11 @@ if __name__ == "__main__":
         help="Overwrite previous experiment results",
     )
     parser.add_argument(
+        "--do_essence_tests",
+        action="store_true",
+        help="Do the essence drift generation test regardless of args.skip_generation_tests",
+    )
+    parser.add_argument(
         "--skip_generation_tests",
         dest="skip_generation_tests",
         action="store_true",
@@ -416,7 +403,7 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
-    parser.set_defaults(skip_generation_tests=True, conserve_memory=False, overwrite=False)
+    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=False, overwrite=False)
     args = parser.parse_args()
 
     # load model

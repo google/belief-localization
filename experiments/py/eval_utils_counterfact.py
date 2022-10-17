@@ -76,7 +76,7 @@ def compute_rewrite_quality_counterfact(
             ]
         )
     }
-
+    import pdb; pdb.set_trace()
     if snips is not None:
         # Gather reference texts
         rel_id = record["requested_rewrite"]["relation_id"]
@@ -86,9 +86,6 @@ def compute_rewrite_quality_counterfact(
             for x in snips[rel_id][target_new["id"]]
             if x["name"] == record["requested_rewrite"]["subject"]
         ]
-        assert (
-            len(consistency_texts) > 0
-        ), "Must have consistency texts to evaluate generation"
         gen_stats = test_generation(
             model,
             tok,
@@ -153,30 +150,29 @@ def test_generation(
     essence_texts: typing.List[str],
     vec: TfidfVectorizer,
 ):
-    gen_texts = generate_fast(
-        model,
-        tok,
-        prefixes,
-        n_gen_per_prompt=1,
-        max_out_len=100,
-    )
+    return_dict = {}
+    if len(consistency_texts) > 0:
+        gen_texts = generate_fast(
+            model,
+            tok,
+            prefixes,
+            n_gen_per_prompt=1,
+            max_out_len=100,
+        )
+        return_dict['gen_texts'] = gen_texts
 
-    ngram_entropy = n_gram_entropy(gen_texts)
-    consistency_tfidf = tfidf_similarity(
-        " ".join(gen_texts), " ".join(consistency_texts), vec
-    )
-
-    ret = {
-        "ngram_entropy": ngram_entropy,
-        "reference_score": consistency_tfidf,
-        "text": gen_texts,
-    }
+        return_dict['ngram_entropy'] = n_gram_entropy(gen_texts)
+        if vec is not None:
+            consistency_tfidf = tfidf_similarity(
+                " ".join(gen_texts), " ".join(consistency_texts), vec
+            )
+            return_dict['reference_score'] = consistency_tfidf
 
     if len(essence_texts) > 0:
         ppl = perplexity(model, tok, " ".join(essence_texts), max_input_length=100)
-        ret.update({"essence_score": ppl, "essence_text": essence_texts})
+        return_dict.update({"essence_score": ppl, "essence_text": essence_texts})
 
-    return ret
+    return return_dict
 
 
 def n_gram_entropy(gen_texts, agg="arith"):
