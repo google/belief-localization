@@ -92,7 +92,7 @@ def compute_rewrite_quality_counterfact(
                 rewrite_prompts,
                 n_gen_per_prompt=5,
                 max_out_len=100,
-            )[0]
+            )
         print(essence_texts)
         if len(essence_texts) > 0:
             pdb.set_trace()
