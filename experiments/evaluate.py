@@ -50,7 +50,6 @@ BASE_DIR='/home/peterhase'
 
 def get_override_hparams(window_size, central_layer, alg_name):
   if central_layer == -1:
-      assert window_size == 1
       assert alg_name == 'FT'
       return_dict = {
           'lr': 5e-4,
@@ -58,6 +57,8 @@ def get_override_hparams(window_size, central_layer, alg_name):
           'norm_constraint': .01,
           'layers': [-1],
       }
+      if window_size > 1:
+          print("IGNORING WINDOW SIZE FOR TUNING EMBEDDINGS")
   elif window_size == 1:
     return_dict = {'layers' : [central_layer]}
     if alg_name == "FT":
@@ -286,7 +287,7 @@ def main(
         case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
         rewrite_this_point = overwrite or not os.path.exists(case_result_path)
         if rewrite_this_point:
-            
+            print("Starting point: ", case_id)
             # generate essence_texts for evaluation if needed
             if do_essence_tests or not skip_generation_tests:
                 subject = record["requested_rewrite"]['subject']
@@ -493,6 +494,8 @@ if __name__ == "__main__":
     if '6B' in model_name:
         central_layers = list(range(0, 28, 4)) + [5, 27]
         num_layers = 28
+    if alg_name == 'FT':
+        central_layers = [-1] + central_layers
     window_sizes=[1]
     if args.edit_layer > -2:
         central_layers = [args.edit_layer]
