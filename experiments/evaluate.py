@@ -323,7 +323,7 @@ def main(
                     f"\n Neighbors: {neighborhood_prompts[:2]}"
                 )
                 for text in snips.names_to_samples[request['subject']][:5]:
-                    print(f" Essence text: {[x[:200] for x in text]}")
+                    print(f" Essence text: {text[:200]}")
                 
               edited_model, weights_copy = apply_algo(
                   model,
