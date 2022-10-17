@@ -366,6 +366,12 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument(
+        "--edit_layer",
+        type=int,
+        default=0,
+        help="Layer at which to edit the model weights. Set to -2 to defer to hparam sweep params below",
+    )
+    parser.add_argument(
         "--ds_name",
         choices=["cf", "zsre"],
         default="cf",
@@ -459,10 +465,12 @@ if __name__ == "__main__":
         central_layers = list(range(0, 28, 4)) + [5, 27]
         num_layers = 28
     window_sizes=[1]
-    central_layers=[-1]
+    if args.edit_layer > -2:
+        central_layers = [args.edit_layer]
     print("Starting sweep with hparams:")
     print("- window_sizes: ", window_sizes)
     print("- central_layers: ", central_layers)
+    import pdb; pdb.set_trace()
 
     # main experiment loop
     results_dfs = []
