@@ -94,6 +94,7 @@ def execute_ft(
     # will zero out grads for non subject token idx as needed later
     if min(hparams.layers) == -1:
         weights.update({n: p for n,p in model.named_parameters() if 'embedding' in n or 'wte' in n})
+        assert len(weights) == 1, "more than one token embeddding matrix?"
     # Save old weights for future restoration
     weights_copy = {k: v.detach().clone() for k, v in weights.items()}
     print(f"Weights to be updated: {list(weights.keys())}")
@@ -142,9 +143,7 @@ def execute_ft(
                 loss.backward()
                 # zero out grad for embeds
                 if embedding_token_idx is not None:
-                    import pdb; pdb.set_trace()
-                    embeds_key = [n for n in weights.keys()][0]
-                    embeddings = getattr(model, embeds_key)
+                    embeddings = [v for v in weights.values()][0]
                     n_embeds = embeddings.size(0)
                     non_subj_embeds = np.setdiff1d(np.arange(n_embeds), embedding_token_idx)
                     embeddings.grad[non_subj_embeds,:] = 0
