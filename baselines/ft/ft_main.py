@@ -30,7 +30,17 @@ def apply_ft_to_model(
     if copy:
         model = deepcopy(model)
 
-    deltas = execute_ft(model, tok, requests, hparams)
+    if min(hparams.layers) == -1 and hparams.FT_subj_embeds:
+        embeds_subj_idx = None
+        import pdb; pdb.set_trace()
+        assert len(requests) == 1
+        subject = requests[0]['subject']
+        subject_idx = tok.encode(subject)
+        subject_idx = np.array(subject_idx)
+    else:
+        embeds_subj_idx = None
+
+    deltas = execute_ft(model, tok, requests, hparams, embedding_token_idx=embeds_subj_idx)
 
     with torch.no_grad():
         for w_name, upd_matrix in deltas.items():
@@ -38,7 +48,11 @@ def apply_ft_to_model(
             if return_orig_weights and w_name not in weights_copy:
                 weights_copy[w_name] = w.detach().clone()
 
-            w[...] += upd_matrix
+            is_embeddings = 'wte' in w_name or 'embedding' in w_name
+            if is_embeddings and hparams.FT_subj_embeds:
+                w[embeds_subj_idx,:] += upd_matrix
+            else:
+                w[...] += upd_matrix
 
     print(f"New weights successfully inserted into {list(deltas.keys())}")
 
@@ -50,6 +64,7 @@ def execute_ft(
     tok: AutoTokenizer,
     requests: List[Dict],
     hparams: FTHyperParams,
+    embedding_token_idx = None,
     **kwargs: Any,
 ) -> Dict[str, Tuple[torch.Tensor]]:
     """
@@ -68,8 +83,6 @@ def execute_ft(
             f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
         )
 
-    import pdb; pdb.set_trace()
-
     # Retrieve weights that user desires to change
     weights = {
         n: p
@@ -77,9 +90,12 @@ def execute_ft(
         for layer in hparams.layers
         if hparams.rewrite_module_tmp.format(layer) in n
     }
-    weights = {n: p[0:2,:] for n,p in weights.items()}
+    # add embeddings
     if min(hparams.layers) == -1:
         weights.update({n: p for n,p in model.named_parameters() if 'embedding' in n or 'wte' in n})
+        # limit embeddings to only subj token idx
+        if embedding_token_idx is not None:
+            weights = {n: p[embedding_token_idx,:] (if 'embedding' in n or 'wte' in n) else n: p for n,p in weights.items()}
     # Save old weights for future restoration
     weights_copy = {k: v.detach().clone() for k, v in weights.items()}
     print(f"Weights to be updated: {list(weights.keys())}")

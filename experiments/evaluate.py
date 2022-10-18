@@ -445,7 +445,7 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
-    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=False, verbose=False, overwrite=False)
+    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=True, verbose=False, overwrite=False)
     args = parser.parse_args()
 
     # load model
