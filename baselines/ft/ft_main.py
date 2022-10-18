@@ -96,6 +96,7 @@ def execute_ft(
         # limit embeddings to only subj token idx
         if embedding_token_idx is not None:
             weights = {n: p[embedding_token_idx,:] if ('embedding' in n or 'wte' in n) else p for n,p in weights.items()}
+            weights = {n: p.requires_grad_(True) for n,p in weights.items()}
     # Save old weights for future restoration
     weights_copy = {k: v.detach().clone() for k, v in weights.items()}
     print(f"Weights to be updated: {list(weights.keys())}")
