@@ -21,6 +21,7 @@ class FTHyperParams(HyperParams):
     attn_module_tmp: str
     ln_f_module: str
     lm_head_module: str
+    FT_subj_embeds: bool
 
     # Defaults
     batch_size: int = 128
