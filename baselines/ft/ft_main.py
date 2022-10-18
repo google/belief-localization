@@ -32,11 +32,10 @@ def apply_ft_to_model(
         model = deepcopy(model)
 
     if min(hparams.layers) == -1 and hparams.FT_subj_embeds:
-        embeds_subj_idx = None
         assert len(requests) == 1
         subject = requests[0]['subject']
         subject_idx = tok.encode(subject)
-        subject_idx = np.array(subject_idx)
+        embeds_subj_idx = np.array(subject_idx)
     else:
         embeds_subj_idx = None
 
