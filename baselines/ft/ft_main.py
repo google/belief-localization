@@ -2,6 +2,7 @@ from copy import deepcopy
 from typing import Any, Dict, List, Tuple
 
 import torch
+import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from experiments.causal_trace import find_token_range
@@ -32,7 +33,6 @@ def apply_ft_to_model(
 
     if min(hparams.layers) == -1 and hparams.FT_subj_embeds:
         embeds_subj_idx = None
-        import pdb; pdb.set_trace()
         assert len(requests) == 1
         subject = requests[0]['subject']
         subject_idx = tok.encode(subject)
@@ -91,6 +91,7 @@ def execute_ft(
         if hparams.rewrite_module_tmp.format(layer) in n
     }
     # add embeddings
+    import pdb; pdb.set_trace()
     if min(hparams.layers) == -1:
         weights.update({n: p for n,p in model.named_parameters() if 'embedding' in n or 'wte' in n})
         # limit embeddings to only subj token idx
