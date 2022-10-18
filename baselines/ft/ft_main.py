@@ -50,7 +50,7 @@ def apply_ft_to_model(
             is_embeddings = 'wte' in w_name or 'embedding' in w_name
             if is_embeddings and hparams.FT_subj_embeds:
                 print("only updating embeddings for tokens: ", embeds_subj_idx)
-                w[embeds_subj_idx,:] += upd_matrix
+                w[embeds_subj_idx,:] += upd_matrix[embeds_subj_idx,:]
             else:
                 w[...] += upd_matrix
 
@@ -91,14 +91,9 @@ def execute_ft(
         if hparams.rewrite_module_tmp.format(layer) in n
     }
     # add embeddings
+    # will zero out grads for non subject token idx as needed later
     if min(hparams.layers) == -1:
         weights.update({n: p for n,p in model.named_parameters() if 'embedding' in n or 'wte' in n})
-        # limit embeddings to only subj token idx
-        if embedding_token_idx is not None:
-            weights = {n: p[embedding_token_idx,:] if ('embedding' in n or 'wte' in n) else p for n,p in weights.items()}
-            weights = {n: p.requires_grad_(True) for n,p in weights.items()}
-            for k,p in weights.items():
-                p.retain_grad()
     # Save old weights for future restoration
     weights_copy = {k: v.detach().clone() for k, v in weights.items()}
     print(f"Weights to be updated: {list(weights.keys())}")
@@ -145,6 +140,14 @@ def execute_ft(
 
             if loss.item() >= 1e-2:
                 loss.backward()
+                # zero out grad for embeds
+                if embedding_token_idx is not None:
+                    import pdb; pdb.set_trace()
+                    embeds_key = [n for n in weights.keys()][0]
+                    embeddings = getattr(model, embeds_key)
+                    n_embeds = embeddings.size(0)
+                    non_subj_embeds = np.setdiff1d(np.arange(n_embeds), embedding_token_idx)
+                    embeddings.grad[non_subj_embeds,:] = 0
                 opt.step()
 
             if type(hparams.norm_constraint) is float:
