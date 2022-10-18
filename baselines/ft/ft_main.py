@@ -49,6 +49,7 @@ def apply_ft_to_model(
 
             is_embeddings = 'wte' in w_name or 'embedding' in w_name
             if is_embeddings and hparams.FT_subj_embeds:
+                print("only updating embeddings for tokens: ", embeds_subj_idx)
                 w[embeds_subj_idx,:] += upd_matrix
             else:
                 w[...] += upd_matrix
@@ -90,7 +91,6 @@ def execute_ft(
         if hparams.rewrite_module_tmp.format(layer) in n
     }
     # add embeddings
-    import pdb; pdb.set_trace()
     if min(hparams.layers) == -1:
         weights.update({n: p for n,p in model.named_parameters() if 'embedding' in n or 'wte' in n})
         # limit embeddings to only subj token idx
