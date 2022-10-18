@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Tuple
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from experiments.causal_trace import find_token_range
 from util import nethook
 
 from .ft_hparams import FTHyperParams
@@ -67,6 +68,8 @@ def execute_ft(
             f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
         )
 
+    import pdb; pdb.set_trace()
+
     # Retrieve weights that user desires to change
     weights = {
         n: p
@@ -74,6 +77,7 @@ def execute_ft(
         for layer in hparams.layers
         if hparams.rewrite_module_tmp.format(layer) in n
     }
+    weights = {n: p[0:2,:] for n,p in weights.items()}
     if min(hparams.layers) == -1:
         weights.update({n: p for n,p in model.named_parameters() if 'embedding' in n or 'wte' in n})
     # Save old weights for future restoration

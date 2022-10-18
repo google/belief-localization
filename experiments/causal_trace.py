@@ -4,8 +4,9 @@ import os
 import re
 from collections import defaultdict
 
-import numpy
+import numpy as np
 import torch
+import unidecode
 from datasets import load_dataset
 from matplotlib import pyplot as plt
 from tqdm import tqdm
@@ -80,10 +81,11 @@ def main():
         if noise_level.startswith("s"):
             # Automatic spherical gaussian
             factor = float(noise_level[1:]) if len(noise_level) > 1 else 1.0
-            noise_level = factor * collect_embedding_std(
+            sd = collect_embedding_std(
                 mt, [k["subject"] for k in knowns]
             )
-            print(f"Using noise_level {noise_level} to match model times {factor}")
+            noise_level = factor * sd
+            print(f"Using noise_level {noise_level} to match model stdev {sd} times {factor}")
         elif noise_level == "m":
             # Automatic multivariate gaussian
             noise_level = collect_embedding_gaussian(mt)
@@ -116,9 +118,9 @@ def main():
                     k: v.detach().cpu().numpy() if torch.is_tensor(v) else v
                     for k, v in result.items()
                 }
-                numpy.savez(filename, **numpy_result)
+                np.savez(filename, **numpy_result)
             else:
-                numpy_result = numpy.load(filename, allow_pickle=True)
+                numpy_result = np.load(filename, allow_pickle=True)
             if not numpy_result["correct_prediction"]:
                 tqdm.write(f"Skipping {knowledge['prompt']}")
                 continue
@@ -128,105 +130,6 @@ def main():
             if known_id > 200:
                 continue
             plot_trace_heatmap(plot_result, savepdf=pdfname)
-
-
-def trace_with_patch(
-    model,  # The model
-    inp,  # A set of inputs
-    states_to_patch,  # A list of (token index, layername) triples to restore
-    answers_t,  # Answer probabilities to collect
-    tokens_to_mix,  # Range of tokens to corrupt (begin, end)
-    noise=0.1,  # Level of noise to add
-    uniform_noise=False,
-    replace=False,  # True to replace with instead of add noise
-    trace_layers=None,  # List of traced outputs to return
-):
-    """
-    Runs a single causal trace.  Given a model and a batch input where
-    the batch size is at least two, runs the batch in inference, corrupting
-    a the set of runs [1...n] while also restoring a set of hidden states to
-    the values from an uncorrupted run [0] in the batch.
-
-    The convention used by this function is that the zeroth element of the
-    batch is the uncorrupted run, and the subsequent elements of the batch
-    are the corrupted runs.  The argument tokens_to_mix specifies an
-    be corrupted by adding Gaussian noise to the embedding for the batch
-    inputs other than the first element in the batch.  Alternately,
-    subsequent runs could be corrupted by simply providing different
-    input tokens via the passed input batch.
-
-    Then when running, a specified set of hidden states will be uncorrupted
-    by restoring their values to the same vector that they had in the
-    zeroth uncorrupted run.  This set of hidden states is listed in
-    states_to_patch, by listing [(token_index, layername), ...] pairs.
-    To trace the effect of just a single state, this can be just a single
-    token/layer pair.  To trace the effect of restoring a set of states,
-    any number of token indices and layers can be listed.
-    """
-
-    rs = numpy.random.RandomState(1)  # For reproducibility, use pseudorandom noise
-    if uniform_noise:
-        prng = lambda *shape: rs.uniform(-1, 1, shape)
-    else:
-        prng = lambda *shape: rs.randn(*shape)
-
-    patch_spec = defaultdict(list)
-    for t, l in states_to_patch:
-        patch_spec[l].append(t)
-
-    embed_layername = layername(model, 0, "embed")
-
-    def untuple(x):
-        return x[0] if isinstance(x, tuple) else x
-
-    # Define the model-patching rule.
-    if isinstance(noise, float):
-        noise_fn = lambda x: noise * x
-    else:
-        noise_fn = noise
-
-    def patch_rep(x, layer):
-        if layer == embed_layername:
-            # If requested, we corrupt a range of token embeddings on batch items x[1:]
-            if tokens_to_mix is not None:
-                b, e = tokens_to_mix
-                noise_data = noise_fn(
-                    torch.from_numpy(prng(x.shape[0] - 1, e - b, x.shape[2]))
-                ).to(x.device)
-                if replace:
-                    x[1:, b:e] = noise_data
-                else:
-                    x[1:, b:e] += noise_data
-            return x
-        if layer not in patch_spec:
-            return x
-        # If this layer is in the patch_spec, restore the uncorrupted hidden state
-        # for selected tokens.
-        h = untuple(x)
-        for t in patch_spec[layer]:
-            h[1:, t] = h[0, t]
-        return x
-
-    # With the patching rules defined, run the patched model in inference.
-    additional_layers = [] if trace_layers is None else trace_layers
-    with torch.no_grad(), nethook.TraceDict(
-        model,
-        [embed_layername] + list(patch_spec.keys()) + additional_layers,
-        edit_output=patch_rep,
-    ) as td:
-        outputs_exp = model(**inp)
-
-    # We report softmax probabilities for the answers_t token predictions of interest.
-    probs = torch.softmax(outputs_exp.logits[1:, -1, :], dim=1).mean(dim=0)[answers_t]
-
-    # If tracing all layers, collect all activations together to return.
-    if trace_layers is not None:
-        all_traced = torch.stack(
-            [untuple(td[layer].output).detach().cpu() for layer in trace_layers], dim=2
-        )
-        return probs, all_traced
-
-    return probs
 
 
 def trace_with_repatch(
@@ -239,7 +142,7 @@ def trace_with_repatch(
     noise=0.1,  # Level of noise to add
     uniform_noise=False,
 ):
-    rs = numpy.random.RandomState(1)  # For reproducibility, use pseudorandom noise
+    rs = np.random.RandomState(1)  # For reproducibility, use pseudorandom noise
     if uniform_noise:
         prng = lambda *shape: rs.uniform(-1, 1, shape)
     else:
@@ -293,107 +196,99 @@ def trace_with_repatch(
 
     return probs
 
-
-def calculate_hidden_flow(
-    mt,
-    prompt,
-    subject,
-    samples=10,
-    noise=0.1,
-    token_range=None,
-    uniform_noise=False,
-    replace=False,
-    window=10,
-    kind=None,
-    expect=None,
+def trace_with_patch(
+    model,            # The model
+    batch,            # A set of inputs
+    gen_batch,        # Set of inputs tokenized into pytorch batch without targets, used to get predicted output from noised subject input
+    states_to_patch,  # A list of (token index, layername) triples to restore
+    pred_id,          # token id of answer probabilities to collect
+    tokens_to_mix,    # Range of tokens to corrupt (begin, end)
+    noise=0.1,        # Level of noise to add
+    trace_layers=None # List of traced outputs to return
 ):
-    """
-    Runs causal tracing over every token/layer combination in the network
-    and returns a dictionary numerically summarizing the results.
-    """
-    inp = make_inputs(mt.tokenizer, [prompt] * (samples + 1))
-    with torch.no_grad():
-        answer_t, base_score = [d[0] for d in predict_from_input(mt.model, inp)]
-    [answer] = decode_tokens(mt.tokenizer, [answer_t])
-    if expect is not None and answer.strip() != expect:
-        return dict(correct_prediction=False)
-    e_range = find_token_range(mt.tokenizer, inp["input_ids"][0], subject)
-    if token_range == "subject_last":
-        token_range = [e_range[1] - 1]
-    elif token_range is not None:
-        raise ValueError(f"Unknown token_range: {token_range}")
-    low_score = trace_with_patch(
-        mt.model, inp, [], answer_t, e_range, noise=noise, uniform_noise=uniform_noise
-    ).item()
-    if not kind:
-        differences = trace_important_states(
-            mt.model,
-            mt.num_layers,
-            inp,
-            e_range,
-            answer_t,
-            noise=noise,
-            uniform_noise=uniform_noise,
-            replace=replace,
-            token_range=token_range,
-        )
+    prng = np.random.RandomState(1)  # For reproducibility, use pseudorandom noise
+    patch_spec = defaultdict(list)
+    for t, l in states_to_patch:
+        patch_spec[l].append(t)
+    embed_layername = layername(model, 0, 'embed')
+    
+    def untuple(x):
+        return x[0] if isinstance(x, tuple) else x
+
+    # Define the model-patching rule.
+    def patch_rep(x, layer):
+        if layer == embed_layername:
+            # If requested, we corrupt a range of token embeddings on batch items x[1:]
+            if tokens_to_mix is not None:
+                b, e = tokens_to_mix
+                x[1:, b:e] += noise * torch.from_numpy(
+                    prng.randn(x.shape[0] - 1, e - b, x.shape[2])
+                ).to(x.device)
+            return x
+        if layer not in patch_spec:
+            return x
+        # If this layer is in the patch_spec, restore the uncorrupted hidden state
+        # for selected tokens.
+        h = untuple(x)
+        for t in patch_spec[layer]:
+            h[1:, t] = h[0, t]
+        return x
+
+    # With the patching rules defined, run the patched model in inference.
+    additional_layers = [] if trace_layers is None else trace_layers
+    with torch.no_grad(), nethook.TraceDict(
+        model,
+        [embed_layername] +
+            list(patch_spec.keys()) + additional_layers,
+        edit_output=patch_rep
+    ) as td:
+        if 'target_indicators' not in batch:
+          outputs_exp = model(**batch)
+          assert pred_id is not None, "no targets provided, need to specify pred_id"
+          # get the predicted probability for the pred_id token of interest, averaged across noise samples
+          avg_corrupted_probs = torch.softmax(outputs_exp.logits[1:, -1, :], dim=1).mean(dim=0)[pred_id]
+          outputs = avg_corrupted_probs
+        else:
+          probs = score_from_batch(model, batch)
+          outputs = probs[1:].mean() # probs[0] is uncorrupted pred probs
+
+    # If tracing all layers, collect all activations together to return.
+    if trace_layers is not None:
+        all_traced = torch.stack(
+            [untuple(td[layer].output).detach().cpu() for layer in trace_layers], dim=2)
+        return outputs, all_traced
+
+    # get the noised pred_id if not restoring anything
+    if states_to_patch == []:
+        # need to call predict_model if really want scores for preds on the noised inputs
+        pure_noise_batch = {k: v[1:,...] for k,v in gen_batch}
+        pure_noise_outputs = model(**pure_noise_batch)
+        logits = pure_noise_outputs['logits']
+        probs = torch.softmax(logits[:, -1], dim=1).mean(dim=0)
+        noised_pred_id = torch.argmax(probs)
+        return outputs, noised_pred_id
+
+    return outputs
+
+
+def trace_important_states(model, num_layers, batch, e_range, pred_id=None, noise=0.1):
+    if 'target_indicators' in batch:
+      ntoks = batch["input_ids"].shape[1] - batch["target_indicators"].sum(-1)[0]
     else:
-        differences = trace_important_window(
-            mt.model,
-            mt.num_layers,
-            inp,
-            e_range,
-            answer_t,
-            noise=noise,
-            uniform_noise=uniform_noise,
-            replace=replace,
-            window=window,
-            kind=kind,
-            token_range=token_range,
-        )
-    differences = differences.detach().cpu()
-    return dict(
-        scores=differences,
-        low_score=low_score,
-        high_score=base_score,
-        input_ids=inp["input_ids"][0],
-        input_tokens=decode_tokens(mt.tokenizer, inp["input_ids"][0]),
-        subject_range=e_range,
-        answer=answer,
-        window=window,
-        correct_prediction=True,
-        kind=kind or "",
-    )
-
-
-def trace_important_states(
-    model,
-    num_layers,
-    inp,
-    e_range,
-    answer_t,
-    noise=0.1,
-    uniform_noise=False,
-    replace=False,
-    token_range=None,
-):
-    ntoks = inp["input_ids"].shape[1]
+      ntoks = batch["input_ids"].shape[1]
     table = []
-
-    if token_range is None:
-        token_range = range(ntoks)
-    for tnum in token_range:
+    start_token_idx = e_range[0]
+    for tnum in range(start_token_idx, ntoks):
         row = []
-        for layer in range(num_layers):
+        for layer in range(0, num_layers):
+            print(f"tracing token {tnum}, layer {layer}", end='\r')
             r = trace_with_patch(
                 model,
-                inp,
+                batch,
                 [(tnum, layername(model, layer))],
-                answer_t,
+                pred_id,
                 tokens_to_mix=e_range,
                 noise=noise,
-                uniform_noise=uniform_noise,
-                replace=replace,
             )
             row.append(r)
         table.append(torch.stack(row))
@@ -401,26 +296,18 @@ def trace_important_states(
 
 
 def trace_important_window(
-    model,
-    num_layers,
-    inp,
-    e_range,
-    answer_t,
-    kind,
-    window=10,
-    noise=0.1,
-    uniform_noise=False,
-    replace=False,
-    token_range=None,
+    model, num_layers, batch, gen_batch, e_range, pred_id=None, kind=None, window=10, noise=0.1, 
 ):
-    ntoks = inp["input_ids"].shape[1]
+    if 'target_indicators' in batch:
+      ntoks = batch["input_ids"].shape[1] - batch["target_indicators"].sum(-1)[0]
+    else:
+      ntoks = batch["input_ids"].shape[1]
     table = []
-
-    if token_range is None:
-        token_range = range(ntoks)
-    for tnum in token_range:
+    start_token_idx = e_range[0]
+    for tnum in range(start_token_idx, ntoks):
         row = []
-        for layer in range(num_layers):
+        for layer in range(0, num_layers):
+            print(f"tracing token {tnum}, layer {layer} for module type {kind}", end='\r')
             layerlist = [
                 (tnum, layername(model, L, kind))
                 for L in range(
@@ -428,18 +315,164 @@ def trace_important_window(
                 )
             ]
             r = trace_with_patch(
-                model,
-                inp,
-                layerlist,
-                answer_t,
-                tokens_to_mix=e_range,
-                noise=noise,
-                uniform_noise=uniform_noise,
-                replace=replace,
+                model, batch, layerlist, pred_id, tokens_to_mix=e_range, noise=noise, 
             )
             row.append(r)
         table.append(torch.stack(row))
     return torch.stack(table)
+
+
+def calculate_hidden_flow(
+    mt, prompt, subject, target, samples=10, noise=0.1, window=10, output_type='probs', kind=None,
+):
+    """
+    Runs causal tracing over every token/layer combination in the network
+    and returns a dictionary numerically summarizing the results.
+
+    Args
+      target: str output to be explained
+    """
+    special_token_ids = [mt.tokenizer.eos_token_id, mt.tokenizer.bos_token_id, mt.tokenizer.pad_token_id]
+    assert isinstance(prompt, str)
+    if target is None:
+        preds, scores, _ = predict_model(mt, [prompt], max_decode_steps=2, score_if_generating=True)
+    else:
+        preds, scores, query_inputs = predict_model(mt, [prompt], answers=[target])
+    answer = preds[0]
+    base_score = scores[0].item()
+    pred_id = None 
+    batch_size = (samples+1)
+    batch = make_inputs(mt.tokenizer, prompts=[prompt] * batch_size, targets=[answer] * batch_size)
+    gen_batch = simple_make_inputs(mt.tokenizer, prompts=[prompt] * batch_size)
+    e_range = find_token_range(mt.tokenizer, substring=subject, prompt_str=prompt)
+    low_score, _ = trace_with_patch(mt.model, batch, gen_batch, [], pred_id, tokens_to_mix=e_range, noise=noise)
+    if not kind:
+        differences = trace_important_states(
+            mt.model, mt.num_layers, batch, gen_batch, e_range, pred_id, noise=noise,
+        )
+    else:
+        differences = trace_important_window(
+            mt.model,
+            mt.num_layers,
+            batch,
+            gen_batch,
+            e_range,
+            pred_id,
+            noise=noise,
+            window=window,
+            kind=kind,
+        )
+    differences = differences.detach().cpu().squeeze()
+    individual_tokens = [mt.tokenizer.decode([tok]) for idx, tok in enumerate(batch['query_ids'][0]) if (not tok in special_token_ids)]
+    # make a few last things to add to dict
+    if '\n' in individual_tokens: # assume prompting with examples separated by '\n'
+      reversed_labels = list(reversed(individual_tokens))
+      last_sep_idx = len(individual_tokens) - reversed_labels.index('\n') - 1
+      test_tokens = individual_tokens[(last_sep_idx+1):]
+    else:
+      test_tokens = individual_tokens
+    return dict(
+        scores=differences,
+        low_score=low_score.item(),
+        base_score=base_score,
+        high_score=max(base_score, differences.max().item()),
+        input_tokens=individual_tokens,
+        test_input_tokens=test_tokens,
+        test_input_str=prompt.split('\n')[-1],
+        subject_range=e_range,
+        answer=answer,
+        window=window,
+        kind=kind or "",
+    )
+
+
+def get_high_and_low_scores(
+    mt, prompt, subject, target, samples=10, noise=0.1,
+):
+    """
+    Runs causal tracing over every token/layer combination in the network
+    and returns a dictionary numerically summarizing the results.
+
+    Args
+      target: str output to be explained
+    """
+    special_token_ids = [mt.tokenizer.eos_token_id, mt.tokenizer.bos_token_id, mt.tokenizer.pad_token_id]
+    assert isinstance(prompt, str)
+    if target is None:
+        preds, scores, _ = predict_model(mt, [prompt], max_decode_steps=2, score_if_generating=True)
+    else:
+        preds, scores, query_inputs = predict_model(mt, [prompt], answers=[target])
+    answer = preds[0]
+    base_score = scores[0].item()
+    pred_id = None 
+    batch_size = (samples+1)
+    batch = make_inputs(mt.tokenizer, prompts=[prompt] * batch_size, targets=[answer] * batch_size)
+    e_range = find_token_range(mt.tokenizer, substring=subject, prompt_str=prompt)
+    low_score = trace_with_patch(mt.model, batch, [], pred_id, tokens_to_mix=e_range, noise=noise)
+    high_score = scores[0]
+    return high_score.item(), low_score.item()
+
+
+def score_from_batch(model, batch):
+  model_batch = {
+      'input_ids' : batch['input_ids'],
+      'attention_mask' : batch['attention_mask']
+  }
+  target_tokens = batch['target_ids']
+  target_mask = batch['target_indicators']
+  logits = mt.model(**model_batch).logits
+  log_probs = torch.log_softmax(logits, dim=-1)
+  log_probs = log_probs
+  # align probs and target mask by cutting off one token idx from the ends
+  log_probs = log_probs[:,:-1,:] # batch_size x seq_len x vocab_size
+  target_tokens = target_tokens[:,1:] # batch_size x seq_len
+  target_mask = target_mask[:,1:]
+  # now iterate over examples and tokens, collecting the target token prob
+  log_probs = torch.gather(log_probs, -1, target_tokens.unsqueeze(-1)).squeeze(-1)
+  # will sum up log probs, so zero out log_probs for non-target indices
+  log_probs = target_mask * log_probs
+  seq_log_probs = log_probs.sum(-1)
+  return torch.exp(seq_log_probs)
+
+
+def predict_model(mt, 
+                query_inputs,
+                answers=None, 
+                trigger_phrase=None,
+                max_decode_steps=None,
+                score_if_generating=False):
+  assert not isinstance(query_inputs, str), "provide queries as list"
+  with torch.no_grad():
+    generate_and_score = (answers is None)
+    batch = make_inputs(mt.tokenizer, query_inputs, targets=answers)
+    if generate_and_score:
+      pad_token_id = mt.tokenizer.pad_token_id
+      pad_token_id = pad_token_id if pad_token_id else 0
+      outputs = mt.model.generate(**batch, do_sample=False, max_new_tokens=max_decode_steps,
+                                  pad_token_id=pad_token_id)
+      outputs = [list(filter(lambda x: x != pad_token_id, output)) for output in outputs]
+      preds = [mt.tokenizer.decode(output) for output in outputs]
+      preds = [pred.replace(query_input, "").strip() for pred, query_input in zip(preds, query_inputs)]     
+      # for some reason huggingface generate not giving generation probs, so we recalculate
+      if score_if_generating: 
+        batch = make_inputs(mt.tokenizer, query_inputs, targets=preds)
+        scores = score_from_batch(mt.model, batch)
+      else:
+        scores = -100 * np.ones(len(preds))
+    else:
+      num_answers = len(answers)
+      repeated_inputs = []
+      repeated_answers = []
+      for input in query_inputs:
+        for answer in answers:
+          repeated_inputs.append(input)
+          repeated_answers.append(answer)
+      batch = make_inputs(mt.tokenizer, repeated_inputs, repeated_answers)
+      scores = score_from_batch(mt.model, batch)
+      scores = scores.reshape(-1, num_answers)
+      pred_ids = [torch.argmax(ex_answer_probs).item() for ex_answer_probs in scores]
+      preds = [answers[pred_id] for pred_id in pred_ids]
+  return preds, scores, query_inputs
 
 
 class ModelAndTokenizer:
@@ -589,7 +622,80 @@ def plot_all_flow(mt, prompt, subject=None):
 
 
 # Utilities for dealing with tokens
-def make_inputs(tokenizer, prompts, device="cuda"):
+def make_inputs(tokenizer, prompts, targets=None, device="cuda"):
+    token_lists = [tokenizer.encode(p) for p in prompts]
+    if "[PAD]" in tokenizer.all_special_tokens:
+        pad_id = tokenizer.all_special_ids[tokenizer.all_special_tokens.index("[PAD]")]
+    elif tokenizer.pad_token_id is not None:
+        pad_id = tokenizer.pad_token_id
+    else:
+        pad_id = 0
+    if targets is None:
+      maxlen = max(len(t) for t in token_lists)
+      input_ids = [[pad_id] * (maxlen - len(t)) + t for t in token_lists]
+      attention_mask = [[0] * (maxlen - len(t)) + [1] * len(t) for t in token_lists]
+      return dict(
+          input_ids=torch.tensor(input_ids).to(device),
+          attention_mask=torch.tensor(attention_mask).to(device),
+      )
+    if targets is not None:
+      target_lists = [tokenizer.encode(" " + t) for t in targets]
+      maxlen = max(len(p) + len(t) for p, t in zip(token_lists, target_lists))
+      combine_lists = [p + t for p, t in zip(token_lists, target_lists)]
+      query_ids = [[pad_id] * (maxlen - len(t)) + t for t in token_lists]
+      input_ids = [[pad_id] * (maxlen - len(t)) + t for t in combine_lists]
+      target_ids = [[pad_id] * (maxlen - len(t)) + t for t in target_lists]
+      target_indicators = [[0] * (maxlen - len(t)) + [1] * len(t) for t in target_lists]
+      attention_mask = [[0] * (maxlen - len(t)) + [1] * len(t) for t in combine_lists]
+      return dict(
+          input_ids=torch.tensor(input_ids).to(device),
+          query_ids=torch.tensor(query_ids).to(device),
+          target_ids=torch.tensor(target_ids).to(device),
+          target_indicators=torch.tensor(target_indicators).to(device),
+          attention_mask=torch.tensor(attention_mask).to(device),
+      )
+
+
+def decode_tokens(tokenizer, token_array):
+    if hasattr(token_array, "shape") and len(token_array.shape) > 1:
+        return [decode_tokens(tokenizer, row) for row in token_array]
+    return [tokenizer.decode([t]) for t in token_array]
+
+
+def find_token_range(tokenizer, token_array=None, substring=None, prompt_str=None):
+    if prompt_str is None:
+      toks = decode_tokens(tokenizer, token_array)
+    else:
+      token_array = tokenizer.encode(prompt_str)
+      toks = decode_tokens(tokenizer, token_array)
+    whole_string = "".join(toks)
+    try:
+      char_loc = whole_string.index(substring)
+    except:
+      assert prompt_str is not None
+      # clean non-unicode characters
+      prompt_str = unidecode.unidecode(prompt_str)
+      token_array = tokenizer.encode(prompt_str)
+      toks = decode_tokens(tokenizer, token_array)
+      whole_string = "".join(toks)
+      substring = unidecode.unidecode(substring)
+      # clean punctuation spacing
+      for punc in ['.', ',', '!']:
+        substring = substring.replace(f" {punc}", punc)
+        whole_string = whole_string.replace(f" {punc}", punc)
+      char_loc = whole_string.index(substring)
+    loc = 0
+    tok_start, tok_end = None, None
+    for i, t in enumerate(toks):
+        loc += len(t)
+        if tok_start is None and loc > char_loc:
+            tok_start = i
+        if tok_end is None and loc >= char_loc + len(substring):
+            tok_end = i + 1
+            break
+    return (tok_start, tok_end)
+
+def simple_make_inputs(tokenizer, prompts, device="cuda"):
     token_lists = [tokenizer.encode(p) for p in prompts]
     maxlen = max(len(t) for t in token_lists)
     if "[PAD]" in tokenizer.all_special_tokens:
@@ -605,37 +711,13 @@ def make_inputs(tokenizer, prompts, device="cuda"):
         attention_mask=torch.tensor(attention_mask).to(device),
     )
 
-
-def decode_tokens(tokenizer, token_array):
-    if hasattr(token_array, "shape") and len(token_array.shape) > 1:
-        return [decode_tokens(tokenizer, row) for row in token_array]
-    return [tokenizer.decode([t]) for t in token_array]
-
-
-def find_token_range(tokenizer, token_array, substring):
-    toks = decode_tokens(tokenizer, token_array)
-    whole_string = "".join(toks)
-    char_loc = whole_string.index(substring)
-    loc = 0
-    tok_start, tok_end = None, None
-    for i, t in enumerate(toks):
-        loc += len(t)
-        if tok_start is None and loc > char_loc:
-            tok_start = i
-        if tok_end is None and loc >= char_loc + len(substring):
-            tok_end = i + 1
-            break
-    return (tok_start, tok_end)
-
-
 def predict_token(mt, prompts, return_p=False):
-    inp = make_inputs(mt.tokenizer, prompts)
+    inp = simple_make_inputs(mt.tokenizer, prompts)
     preds, p = predict_from_input(mt.model, inp)
     result = [mt.tokenizer.decode(c) for c in preds]
     if return_p:
         result = (result, p)
     return result
-
 
 def predict_from_input(model, inp):
     out = model(**inp)["logits"]
@@ -732,7 +814,7 @@ def collect_embedding_tdist(mt, degree=3):
     # reduce cov by a factor of (degree - 2) / degree.
     # In other words we should be sampling sqrt(degree - 2 / u) * sample.
     u_sample = torch.from_numpy(
-        numpy.random.RandomState(2).chisquare(df=degree, size=1000)
+        np.random.RandomState(2).chisquare(df=degree, size=1000)
     )
     fixed_sample = ((degree - 2) / u_sample).sqrt()
     mvg = collect_embedding_gaussian(mt)
