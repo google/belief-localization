@@ -494,9 +494,9 @@ if __name__ == "__main__":
     if '6B' in model_name:
         central_layers = list(range(0, 28, 4)) + [5, 27]
         num_layers = 28
-    if alg_name == 'FT':
+    window_sizes=[10, 6, 3]
+    if alg_name == 'FT' and 1 in window_sizes:
         central_layers = [-1] + central_layers
-    window_sizes=[1]
     if args.edit_layer > -2:
         central_layers = [args.edit_layer]
     print("Starting sweep with hparams:")
