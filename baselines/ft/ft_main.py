@@ -72,6 +72,7 @@ def execute_ft(
     Executes the FT update algorithm for the specified update at the specified layer
     Invariant: model at beginning of function == model at end of function
     """
+    patience_counter = 0
 
     # Update target and print info
     requests = deepcopy(requests)
@@ -160,7 +161,11 @@ def execute_ft(
         print(f"Total loss at epoch {it}: {loss_meter.avg:.4f}")
 
         if loss_meter.avg < 1e-2:
-            break
+            patience_counter += 1
+            if patience_counter >= 5:
+                break
+            else:
+                patience_counter = 0
 
     deltas = {k: (weights[k] - weights_copy[k]).detach() for k in weights}
 

@@ -26,6 +26,7 @@ def compute_v(
     """
 
     print("Computing right vector (v)")
+    patience_counter = 0
 
     # Tokenize target into list of int token IDs
     target_ids = tok(request["target_new"]["str"], return_tensors="pt").to("cuda")[
@@ -148,7 +149,11 @@ def compute_v(
             f"{torch.exp(-nll_loss_each).mean().item()}"
         )
         if loss < 5e-2:
-            break
+            patience_counter += 1
+            if patience_counter >= 5:
+                break
+            else:
+                patience_counter = 0
 
         if it == hparams.v_num_grad_steps - 1:
             break

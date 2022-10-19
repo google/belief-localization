@@ -21,6 +21,7 @@ def apply_rome_to_model(
     hparams: ROMEHyperParams,
     copy=False,
     return_orig_weights=False,
+    **kwargs,
 ) -> Tuple[AutoModelForCausalLM, List[str]]:
     """
     Returns a model with the desired changes.
