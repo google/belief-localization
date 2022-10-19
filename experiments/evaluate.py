@@ -25,7 +25,7 @@ from dsets import (
     MENDQADataset,
     get_tfidf_vectorizer,
 )
-from experiments.causal_trace import ModelAndTokenizer
+from experiments.causal_trace import ModelAndTokenizer, score_from_batch
 from experiments.causal_trace import layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
@@ -348,7 +348,10 @@ def main(
                 request['target_new']['str'] = target_noised_output
                 request['target_new']['id'] = 'noised-input'
                 if verbose:
-                    print(" NEW TARGET PREDICTION: ", target_noised_output)
+                    score_batch = make_inputs(tokenizer, [prompt], targets=[target_noised_output])
+                    init_target_prob = score_from_batch(model, score_batch)
+                    print(init_target_prob)
+                    print(" NEW TARGET PREDICTION: ", target_noised_output, f"with pred prob: {init_target_prob:.4f}")
 
             # Compute weight changes + record weights that changed
             start = time.time()
@@ -512,7 +515,8 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
-    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=True, verbose=False, overwrite=False)
+    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=True, verbose=False, overwrite=False,
+                        use_noised_target=False, use_noised_subject=False)
     args = parser.parse_args()
 
     # load model
