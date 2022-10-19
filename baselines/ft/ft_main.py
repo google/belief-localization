@@ -162,10 +162,11 @@ def execute_ft(
 
         if loss_meter.avg < 1e-2:
             patience_counter += 1
+            print(patience_counter)
             if patience_counter >= 5:
                 break
-            else:
-                patience_counter = 0
+        else:
+            patience_counter = 0
 
     deltas = {k: (weights[k] - weights_copy[k]).detach() for k in weights}
 
