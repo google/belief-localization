@@ -125,7 +125,7 @@ def execute_ft(
             target_ids = tok(tgt, return_tensors="pt", padding=True)["input_ids"].to(
                 "cuda"
             )
-            inputs = {v: k.repeat(repeat_input,1) for k,v in inputs.items()}
+            inputs = {k: v.repeat(repeat_input,1) for k,v in inputs.items()}
             target_ids = target_ids.repeat(target_ids,1)
             last_token_inds = inputs["attention_mask"].sum(dim=1) - 1
             loss_mask = target_ids != tok.unk_token_id
