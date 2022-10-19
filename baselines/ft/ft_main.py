@@ -162,7 +162,6 @@ def execute_ft(
 
         if loss_meter.avg < 1e-2:
             patience_counter += 1
-            print(patience_counter)
             if patience_counter >= 5:
                 break
         else:

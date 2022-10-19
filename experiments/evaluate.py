@@ -51,6 +51,7 @@ CODE_DIR='/home/peterhase/belief-loc'
 BASE_DIR='/home/peterhase'
 
 def get_override_hparams(args, window_size, central_layer, alg_name):
+  # embeddings are being FTed
   if central_layer == -1:
       assert alg_name == 'FT'
       return_dict = {
@@ -61,10 +62,12 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
       }
       if window_size > 1:
           print("IGNORING WINDOW SIZE FOR TUNING EMBEDDINGS")
+  # window size 1 approach
   elif window_size == 1:
     return_dict = {'layers' : [central_layer]}
     if alg_name == "FT":
       return_dict['norm_constraint'] = 1e-4
+  # hack for applying ROME to multiple 3 layers
   elif window_size == 3 and alg_name == 'ROME':
     # budget the window size so that we're never editing fewer than three layers
     # hardcoding for now
@@ -80,7 +83,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
         'v_num_grad_steps': 4,
         'v_lr': 0.1
         }
-  else:
+  elif window_size > 1:
     layer = central_layer
     window = window_size
     # same layers logic as used in causal tracing. there is clipping at the edges of the network
@@ -90,6 +93,9 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     return_dict = {'layers' : layers}
     if alg_name == "FT":
       return_dict['norm_constraint'] = 2e-4
+  # increase number of steps if FT and noising the subject
+  if args.use_noised_subject and alg_name == "FT":
+    return_dict['num_steps'] = 100
   return return_dict
 
 def sweep_experiment_name(model_name, alg_name, ds_name, sweep_params):
