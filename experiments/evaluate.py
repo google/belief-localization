@@ -394,17 +394,17 @@ def main(
 
             # Execute evaluation suite
             start = time.time()
-            metrics = {
-                "case_id": case_id,
-                "requested_rewrite": record["requested_rewrite"],
-                "time": exec_time,
-                "post": ds_eval_method(edited_model, tok, record, snips, vec, skip_generation_tests),
-            }
+            with torch.no_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
+                metrics = {
+                    "case_id": case_id,
+                    "requested_rewrite": record["requested_rewrite"],
+                    "time": exec_time,
+                    "post": ds_eval_method(edited_model, tok, record, snips, vec, skip_generation_tests),
+                }
 
-            with torch.no_grad():
                 for k, v in weights_copy.items():
                     nethook.get_parameter(model, k)[...] = v.to("cuda")
-            metrics["pre"] = ds_eval_method(model, tok, record, snips, vec, skip_generation_tests)
+                metrics["pre"] = ds_eval_method(model, tok, record, snips, vec, skip_generation_tests)
 
             # print("metrics: ", metrics)
             print("Evaluation took", time.time() - start)
