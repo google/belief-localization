@@ -93,9 +93,12 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     return_dict = {'layers' : layers}
     if alg_name == "FT":
       return_dict['norm_constraint'] = 2e-4
-  # increase number of steps if FT and noising the subject
-  if args.use_noised_subject and alg_name == "FT":
-    return_dict['num_steps'] = 100
+  # increase number of steps if noising the subject
+  if args.use_noised_subject:
+    if alg_name == "FT":
+        return_dict['num_steps'] = 50
+    if alg_name == "ROME":
+        return_dict['v_grad_num_steps'] = 50
   return return_dict
 
 def sweep_experiment_name(model_name, alg_name, ds_name, sweep_params):
@@ -405,7 +408,7 @@ def main(
 
             # Execute evaluation suite
             start = time.time()
-            with torch.no_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
+            with torch.no_grad(), nullcontext() as td: #nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
                 metrics = {
                     "case_id": case_id,
                     "requested_rewrite": record["requested_rewrite"],
