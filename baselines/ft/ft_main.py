@@ -135,6 +135,7 @@ def execute_ft(
             probs = torch.nn.functional.log_softmax(
                 model(**inputs).logits[torch.arange(bs), last_token_inds], dim=-1
             )
+            import pdb; pdb.set_trace()
             loss = -(torch.gather(probs, 1, target_ids) * loss_mask).sum(
                 1
             ) / loss_mask.sum(1)
