@@ -25,6 +25,7 @@ class ROMEHyperParams(HyperParams):
     attn_module_tmp: str
     ln_f_module: str
     lm_head_module: str
+    editing_noise: float
 
     # Statistics
     mom2_dataset: str

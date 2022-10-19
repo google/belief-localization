@@ -22,6 +22,7 @@ class FTHyperParams(HyperParams):
     ln_f_module: str
     lm_head_module: str
     FT_subj_embeds: bool
+    editing_noise: float
 
     # Defaults
     batch_size: int = 128
