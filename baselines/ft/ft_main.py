@@ -122,11 +122,9 @@ def execute_ft(
             chunks(texts, hparams.batch_size), chunks(targets, hparams.batch_size)
         ):
             inputs = tok(txt, return_tensors="pt", padding=True).to("cuda")
-            target_ids = tok(tgt, return_tensors="pt", padding=True)["input_ids"].to(
-                "cuda"
-            )
+            target_ids = tok(tgt, return_tensors="pt", padding=True)["input_ids"].to("cuda")
             inputs = {k: v.repeat(repeat_input,1) for k,v in inputs.items()}
-            target_ids = target_ids.repeat(target_ids,1)
+            target_ids = target_ids.repeat(repeat_input,1)
             last_token_inds = inputs["attention_mask"].sum(dim=1) - 1
             loss_mask = target_ids != tok.unk_token_id
 
@@ -135,7 +133,6 @@ def execute_ft(
             probs = torch.nn.functional.log_softmax(
                 model(**inputs).logits[torch.arange(bs), last_token_inds], dim=-1
             )
-            import pdb; pdb.set_trace()
             loss = -(torch.gather(probs, 1, target_ids) * loss_mask).sum(
                 1
             ) / loss_mask.sum(1)
