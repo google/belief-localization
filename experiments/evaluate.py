@@ -404,6 +404,12 @@ if __name__ == "__main__":
         help="If continuing from previous run, set to run_id. Otherwise, leave as None.",
     )
     parser.add_argument(
+        "--window_sizes",
+        type=str,
+        default='1',
+        help="Window sizes separted by spaces to use for editing method",
+    )
+    parser.add_argument(
         "--dataset_size_limit",
         "-n",
         type=int,
@@ -487,14 +493,13 @@ if __name__ == "__main__":
     assert alg_name in ["FT", "ROME"]
     hparams_class = FTHyperParams if alg_name == "FT" else ROMEHyperParams
     ds_name = args.ds_name
-    window_sizes = [1]
+    window_sizes = [int(x) for x in args.window_sizes.split()]
     if 'gpt2' in model_name:
         central_layers = list(range(0, 48, 4)) + [17, 47]
         num_layers = 48
     if '6B' in model_name:
         central_layers = list(range(0, 28, 4)) + [5, 27]
         num_layers = 28
-    window_sizes=[6, 3]
     if alg_name == 'FT' and 1 in window_sizes:
         central_layers = [-1] + central_layers
     if args.edit_layer > -2:
