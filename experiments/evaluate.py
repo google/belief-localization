@@ -232,7 +232,7 @@ def main(
     do_essence_tests: bool,
     skip_generation_tests: bool,
     conserve_memory: bool,
-    use_noised_target: bool,
+    use_noised_targets: bool,
     mt=None,
     verbose=False,
     override_hparams=None,
@@ -254,8 +254,8 @@ def main(
     # Determine run directory
     important_hparam_names = override_hparams.keys() if override_hparams is not None else ['layers']
     important_hparams = {k:v for k,v in hparams.__dict__.items() if any([k==name for name in important_hparam_names])}
-    if args.use_noised_targets:
-        important_hparams['use_noised_targets'] = 'T'
+    if args.use_noised_targetss:
+        important_hparams['use_noised_targetss'] = 'T'
     exp_name = ROME_experiment_name(model_name.split('/')[-1],
                                     alg_name,
                                     ds_name,
@@ -325,7 +325,7 @@ def main(
                         print(f" Essence text: {text[:200]}")
             
             # now get the noised output prediction if we are editing to change prediction to noise output rather than original output
-            if use_noised_target:
+            if use_noised_targets:
                 import pdb; pdb.set_trace()
                 num_samples = 10
                 gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_samples + 1))
@@ -472,7 +472,7 @@ if __name__ == "__main__":
         "Useful for quick debugging and hyperparameter sweeps.",
     )
     parser.add_argument(
-        "--use_noised_target",
+        "--use_noised_targets",
         action="store_true",
         help="Rather than changing output from target_true to target_new, change it to the prediction obtained from the noised causal tracing input",
     )
@@ -559,7 +559,7 @@ if __name__ == "__main__":
                     dataset_size_limit=num_points,
                     do_essence_tests=args.do_essence_tests,
                     skip_generation_tests=args.skip_generation_tests,
-                    use_noised_target=args.use_noised_target,
+                    use_noised_targets=args.use_noised_targets,
                     conserve_memory=args.conserve_memory,
                     mt=mt,
                     override_hparams=override_hparams,
