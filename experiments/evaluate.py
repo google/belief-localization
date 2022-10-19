@@ -408,7 +408,7 @@ def main(
 
             # Execute evaluation suite
             start = time.time()
-            with torch.no_grad(), nullcontext() as td: #nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
+            with torch.no_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
                 metrics = {
                     "case_id": case_id,
                     "requested_rewrite": record["requested_rewrite"],
