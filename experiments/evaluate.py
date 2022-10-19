@@ -25,7 +25,7 @@ from dsets import (
     get_tfidf_vectorizer,
 )
 from experiments.causal_trace import ModelAndTokenizer
-from experiments.causal_trace import corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs
+from experiments.causal_trace import get_corrupted_forward_pass_cm, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from rome import ROMEHyperParams, apply_rome_to_model
@@ -225,6 +225,7 @@ def make_editing_results_df(exp_name, n=1000):
   return return_df
 
 def main(
+    args,
     alg_name: str,
     model_name: Union[str, Tuple],
     ds_name: str,
@@ -232,7 +233,6 @@ def main(
     do_essence_tests: bool,
     skip_generation_tests: bool,
     conserve_memory: bool,
-    use_noised_targets: bool,
     mt=None,
     verbose=False,
     override_hparams=None,
@@ -254,8 +254,8 @@ def main(
     # Determine run directory
     important_hparam_names = override_hparams.keys() if override_hparams is not None else ['layers']
     important_hparams = {k:v for k,v in hparams.__dict__.items() if any([k==name for name in important_hparam_names])}
-    if args.use_noised_targets:
-        important_hparams['use_noised_targets'] = 'T'
+    if args.use_noised_target:
+        important_hparams['use_noised_target'] = 'T'
     exp_name = ROME_experiment_name(model_name.split('/')[-1],
                                     alg_name,
                                     ds_name,
@@ -300,7 +300,7 @@ def main(
             neighborhood_prompts = record["neighborhood_prompts"]
             if verbose:
                 print("Updating point:"
-                    f"[{prompt}] -> [{request['target_new']['str']}]"
+                    f" orig update: [{prompt}] -> [{request['target_new']['str']}]"
                     f"\n Paraphrases: {paraphrase_prompts[:2]}"
                     f"\n Neighbors: {neighborhood_prompts[:2]}")
 
@@ -321,11 +321,11 @@ def main(
                 elif verbose:
                     print("using wikipedia essence texts")
                 if verbose:
-                    for text in snips.names_to_samples[request['subject']][:5]:
+                    for text in snips.names_to_samples[request['subject']][:2]:
                         print(f" Essence text: {text[:200]}")
             
             # now get the noised output prediction if we are editing to change prediction to noise output rather than original output
-            if use_noised_targets:
+            if args.use_noised_target:
                 num_samples = 10
                 gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_samples))
                 e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
@@ -336,7 +336,7 @@ def main(
                 request['target_new']['str'] = target_noised_output
                 request['target_new']['id'] = 'noised-input'
                 if verbose:
-                    print("New target prediction: ", target_noised_output)
+                    print(" NEW TARGET PREDICTION: ", target_noised_output)
 
             # Compute weight changes + record weights that changed
             start = time.time()
@@ -345,20 +345,16 @@ def main(
                 if conserve_memory
                 else dict()
             )
-            with torch.enable_grad():
+            # define context based on whether or not we use_noised_subject
+            if not args.use_noised_subject:
+                context_manager = torch.enable_grad()
+            else:
+                e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
+                context_manager = get_corrupted_forward_pass_cm(model, e_range, hparams.editing_noise)
+            with context_manager as cm:
               request = record["requested_rewrite"]
               paraphrase_prompts = record["paraphrase_prompts"]
               neighborhood_prompts = record["neighborhood_prompts"]
-              if verbose:
-                print(
-                    "Updating point:"
-                    f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
-                    f"\n Paraphrases: {paraphrase_prompts[:2]}"
-                    f"\n Neighbors: {neighborhood_prompts[:2]}"
-                )
-                for text in snips.names_to_samples[request['subject']][:5]:
-                    print(f" Essence text: {text[:200]}")
-                
               edited_model, weights_copy = apply_algo(
                   model,
                   tok,
@@ -471,9 +467,14 @@ if __name__ == "__main__":
         "Useful for quick debugging and hyperparameter sweeps.",
     )
     parser.add_argument(
-        "--use_noised_targets",
+        "--use_noised_target",
         action="store_true",
         help="Rather than changing output from target_true to target_new, change it to the prediction obtained from the noised causal tracing input",
+    )
+    parser.add_argument(
+        "--use_noised_subject",
+        action="store_true",
+        help="Rather than change o-true to o-new for (s,r,.) input, change o-noise to o-true for (s-noise, r,.) input",
     )
     parser.add_argument(
         "--conserve_memory",
@@ -552,13 +553,13 @@ if __name__ == "__main__":
             override_hparams = get_override_hparams(args, window_size, central_layer, alg_name)
             if RUN_EXPERIMENT:
                 main(
+                    args,
                     alg_name=alg_name,
                     model_name=model_name,
                     ds_name=ds_name,
                     dataset_size_limit=num_points,
                     do_essence_tests=args.do_essence_tests,
                     skip_generation_tests=args.skip_generation_tests,
-                    use_noised_targets=args.use_noised_targets,
                     conserve_memory=args.conserve_memory,
                     mt=mt,
                     override_hparams=override_hparams,
