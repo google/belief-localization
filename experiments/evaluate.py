@@ -25,6 +25,7 @@ from dsets import (
     get_tfidf_vectorizer,
 )
 from experiments.causal_trace import ModelAndTokenizer
+from experiments.causal_trace import trace_with_patch, find_token_range, make_inputs, simple_make_inputs
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from rome import ROMEHyperParams, apply_rome_to_model
@@ -48,7 +49,7 @@ DS_DICT = {
 CODE_DIR='/home/peterhase/belief-loc'
 BASE_DIR='/home/peterhase'
 
-def get_override_hparams(window_size, central_layer, alg_name):
+def get_override_hparams(args, window_size, central_layer, alg_name):
   if central_layer == -1:
       assert alg_name == 'FT'
       return_dict = {
@@ -231,6 +232,7 @@ def main(
     do_essence_tests: bool,
     skip_generation_tests: bool,
     conserve_memory: bool,
+    use_noised_target: bool,
     mt=None,
     verbose=False,
     override_hparams=None,
@@ -252,6 +254,8 @@ def main(
     # Determine run directory
     important_hparam_names = override_hparams.keys() if override_hparams is not None else ['layers']
     important_hparams = {k:v for k,v in hparams.__dict__.items() if any([k==name for name in important_hparam_names])}
+    if args.use_noised_targets:
+        important_hparams['use_noised_targets'] = 'T'
     exp_name = ROME_experiment_name(model_name.split('/')[-1],
                                     alg_name,
                                     ds_name,
@@ -288,9 +292,20 @@ def main(
         rewrite_this_point = overwrite or not os.path.exists(case_result_path)
         if rewrite_this_point:
             print("Starting point: ", case_id)
+            # print info for this point
+            request = record["requested_rewrite"]
+            subject = record["requested_rewrite"]['subject']
+            prompt = request['prompt'].format(subject)
+            paraphrase_prompts = record["paraphrase_prompts"]
+            neighborhood_prompts = record["neighborhood_prompts"]
+            if verbose:
+                print("Updating point:"
+                    f"[{prompt}] -> [{request['target_new']['str']}]"
+                    f"\n Paraphrases: {paraphrase_prompts[:2]}"
+                    f"\n Neighbors: {neighborhood_prompts[:2]}")
+
             # generate essence_texts for evaluation if needed
             if do_essence_tests or not skip_generation_tests:
-                subject = record["requested_rewrite"]['subject']
                 essence_prompt = "{} is a".format(subject)
                 if len(snips.names_to_samples[subject]) == 0:
                     if verbose:
@@ -305,7 +320,25 @@ def main(
                     snips.names_to_samples[subject].extend(essence_texts)
                 elif verbose:
                     print("using wikipedia essence texts")
+                if verbose:
+                    for text in snips.names_to_samples[request['subject']][:5]:
+                        print(f" Essence text: {text[:200]}")
             
+            # now get the noised output prediction if we are editing to change prediction to noise output rather than original output
+            if use_noised_target:
+                import pdb; pdb.set_trace()
+                num_samples = 10
+                gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_samples + 1))
+                e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
+                noise = hparams.editing_noise
+                _, noised_pred_id = trace_with_patch(mt.model, batch, gen_batch, [], pred_id, tokens_to_mix=e_range, noise=noise)
+                target_noised_output = tok.decode([noised_pred_id])
+                request['target_old'] = request['target_new']
+                request['target_new']['str'] = target_noised_output
+                request['target_new']['id'] = 'noised-input'
+                if verbose:
+                    print("New target prediction: ", target_noised_output)
+
             # Compute weight changes + record weights that changed
             start = time.time()
             args_conserve_memory = (
@@ -439,6 +472,11 @@ if __name__ == "__main__":
         "Useful for quick debugging and hyperparameter sweeps.",
     )
     parser.add_argument(
+        "--use_noised_target",
+        action="store_true",
+        help="Rather than changing output from target_true to target_new, change it to the prediction obtained from the noised causal tracing input",
+    )
+    parser.add_argument(
         "--conserve_memory",
         dest="conserve_memory",
         action="store_true",
@@ -512,7 +550,7 @@ if __name__ == "__main__":
     results_dfs = []
     for window_size in window_sizes:
         for central_layer in central_layers:
-            override_hparams = get_override_hparams(window_size, central_layer, alg_name)
+            override_hparams = get_override_hparams(args, window_size, central_layer, alg_name)
             if RUN_EXPERIMENT:
                 main(
                     alg_name=alg_name,
@@ -521,7 +559,8 @@ if __name__ == "__main__":
                     dataset_size_limit=num_points,
                     do_essence_tests=args.do_essence_tests,
                     skip_generation_tests=args.skip_generation_tests,
-                    conserve_memory=False,
+                    use_noised_target=args.use_noised_target,
+                    conserve_memory=args.conserve_memory,
                     mt=mt,
                     override_hparams=override_hparams,
                     verbose=args.verbose,
