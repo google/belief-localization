@@ -25,7 +25,7 @@ from dsets import (
     get_tfidf_vectorizer,
 )
 from experiments.causal_trace import ModelAndTokenizer
-from experiments.causal_trace import trace_with_patch, find_token_range, make_inputs, simple_make_inputs
+from experiments.causal_trace import corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from rome import ROMEHyperParams, apply_rome_to_model
@@ -328,10 +328,10 @@ def main(
             if use_noised_targets:
                 import pdb; pdb.set_trace()
                 num_samples = 10
-                gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_samples + 1))
+                gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_samples))
                 e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
                 noise = hparams.editing_noise
-                _, noised_pred_id = trace_with_patch(mt.model, batch, gen_batch, [], pred_id, tokens_to_mix=e_range, noise=noise)
+                _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=noise)
                 target_noised_output = tok.decode([noised_pred_id])
                 request['target_old'] = request['target_new']
                 request['target_new']['str'] = target_noised_output

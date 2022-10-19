@@ -131,6 +131,50 @@ def main():
                 continue
             plot_trace_heatmap(plot_result, savepdf=pdfname)
 
+def corrupted_forward_pass(
+    model,            # The model
+    batch,            # A set of inputs. Assumed to be the same input text repeated num_noise_samples times
+    gen_batch,        # Set of inputs tokenized into pytorch batch without targets, used to get predicted output from noised subject input. Assumed to be the same input text repeated
+    tokens_to_mix,    # Range of tokens to corrupt (begin, end)
+    noise=0.1,        # Level of noise to add
+    ):
+    assert batch is None or gen_batch is None, "provide one of batch or gen_batch for scoring or generation"
+    prng = np.random.RandomState(1)  # For reproducibility, use pseudorandom noise
+    embed_layername = layername(model, 0, 'embed')
+
+    # define function that noises embeddings at tokens_to_mix indices
+    def patch_rep(x, layer):
+        if layer == embed_layername:
+            # If requested, we corrupt a range of token embeddings on batch items x[1:]
+            if tokens_to_mix is not None:
+                b, e = tokens_to_mix
+                x[:, b:e] += noise * torch.from_numpy(
+                    prng.randn(x.shape[0], e - b, x.shape[2])
+                ).to(x.device)
+            return x
+        else:
+            return x
+
+    # With the patching rules defined, run the patched model in inference.
+    with torch.no_grad(), nethook.TraceDict(
+        model,
+        [embed_layername] +
+            list(patch_spec.keys()) + additional_layers,
+        edit_output=patch_rep
+    ) as td:
+        if batch is not None:
+            probs = score_from_batch(model, batch)
+            outputs = probs.mean() # average over noise samples
+            return outputs
+        elif gen_batch is not None:
+            pure_noise_batch = {k: v[1:,...] for k,v in gen_batch}
+            pure_noise_outputs = model(**pure_noise_batch)
+            logits = pure_noise_outputs['logits']
+            probs = torch.softmax(logits[:, -1], dim=1).mean(dim=0) # average over noise samples
+            noised_pred_id = torch.argmax(probs)
+            outputs = probs[noised_pred_id]
+            return outputs, noised_pred_id
+
 
 def trace_with_repatch(
     model,  # The model
@@ -257,16 +301,6 @@ def trace_with_patch(
         all_traced = torch.stack(
             [untuple(td[layer].output).detach().cpu() for layer in trace_layers], dim=2)
         return outputs, all_traced
-
-    # get the noised pred_id if not restoring anything
-    if states_to_patch == []:
-        # need to call predict_model if really want scores for preds on the noised inputs
-        pure_noise_batch = {k: v[1:,...] for k,v in gen_batch}
-        pure_noise_outputs = model(**pure_noise_batch)
-        logits = pure_noise_outputs['logits']
-        probs = torch.softmax(logits[:, -1], dim=1).mean(dim=0)
-        noised_pred_id = torch.argmax(probs)
-        return outputs, noised_pred_id
 
     return outputs
 
