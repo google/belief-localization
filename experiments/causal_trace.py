@@ -158,8 +158,7 @@ def corrupted_forward_pass(
     # With the patching rules defined, run the patched model in inference.
     with torch.no_grad(), nethook.TraceDict(
         model,
-        [embed_layername] +
-            list(patch_spec.keys()) + additional_layers,
+        [embed_layername],
         edit_output=patch_rep
     ) as td:
         if batch is not None:
