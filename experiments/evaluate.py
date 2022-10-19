@@ -350,7 +350,7 @@ def main(
                 if verbose:
                     score_batch = make_inputs(tok, [prompt], targets=[target_noised_output])
                     init_target_prob = score_from_batch(model, score_batch)
-                    print(" NEW TARGET PREDICTION: ", target_noised_output, f"with init pred prob: {init_target_prob.item():.4f}")
+                    print(f" NEW TARGET PREDICTION: \"{target_noised_output}\"", , f"...with init pred prob: {init_target_prob.item():.4f}")
 
             # Compute weight changes + record weights that changed
             start = time.time()
@@ -371,7 +371,7 @@ def main(
                         if e_range is not None:
                             b, e = e_range
                             embeds_noise = torch.from_numpy(prng.randn(x.shape[0], e - b, x.shape[2])).to(x.device)
-                            x[:, b:e] += noise * embeds_noise
+                            x[:, b:e] += hparams.editing_noise * embeds_noise
                         # print("added noise to embeds: ", embeds_noise)
                         return x
                     else:
