@@ -91,6 +91,17 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
       return_dict['norm_constraint'] = 2e-4
   return return_dict
 
+def sweep_experiment_name(model_name, alg_name, ds_name, sweep_params):
+  exp_name = f'{model_name}_{alg_name}_outputs_{ds_name}_editing_sweep'  
+  for k,v in sweep_params.items():
+    _v = str(v).replace(", ", "-")
+    if _v == "-1":
+        _v = "embeds"
+    if _v == "-2":
+        _v = "all"
+    exp_name += f"_{k[:5]}-{_v}"
+  return exp_name
+
 def ROME_experiment_name(model_name, alg_name, ds_name, hparams_to_add):
   exp_name = f'{model_name}/{alg_name}_outputs_{ds_name}'
   for k,v in hparams_to_add.items():
@@ -577,14 +588,13 @@ if __name__ == "__main__":
     # combine and save results
     results_df = pd.concat(results_dfs)
     _model_name = model_name.split('/')[-1]
-    if len(central_layers) > 1:
-        file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_sweep_n{num_points}.csv'
-    else:
-        _layer = 'embeds' if central_layers[0] == -1 else central_layers[0]
-        print("checking layer naming working properly:")
-        print(central_layers)
-        print(_layer)
-        file_name = f'{_model_name}_{alg_name}_outputs_{ds_name}_editing_layer-{_layer}_n{num_points}.csv'
+    sweep_params = {'ws': window_sizes, 'layers': args.edit_layer}
+    if args.use_noised_target:
+        obj = '_noise-target'
+    if args.use_noised_subject:
+        obj = '_noise-subject'
+    ovr_exp_name = sweep_experiment_name(_model_name, alg_name, ds_name, sweep_params)
+    file_name = f'{ovr_exp_name}{obj}_n{num_points}.csv'
     save_path = f'{BASE_DIR}/results/{file_name}'
     results_df.to_csv(save_path, index=False)
     # upload results csv to google bucket    
