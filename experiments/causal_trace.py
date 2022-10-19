@@ -131,8 +131,10 @@ def main():
                 continue
             plot_trace_heatmap(plot_result, savepdf=pdfname)
 
-def get_corrupted_forward_pass_cm(
+def corrupted_forward_pass(
     model,            # The model
+    batch,            # A set of inputs. Assumed to be the same input text repeated num_noise_samples times
+    gen_batch,        # Set of inputs tokenized into pytorch batch without targets, used to get predicted output from noised subject input. Assumed to be the same input text repeated
     tokens_to_mix,    # Range of tokens to corrupt (begin, end)
     noise=0.1,        # Level of noise to add
     ):
@@ -151,24 +153,11 @@ def get_corrupted_forward_pass_cm(
             return x
         else:
             return x
-
-    # With the patching rules defined, run the patched model in inference.
-    context_manager =  torch.no_grad(), nethook.TraceDict(
+    with torch.no_grad(), nethook.TraceDict(
         model,
         [embed_layername],
         edit_output=patch_rep
-    )
-    return context_manager
-
-def corrupted_forward_pass(
-    model,            # The model
-    batch,            # A set of inputs. Assumed to be the same input text repeated num_noise_samples times
-    gen_batch,        # Set of inputs tokenized into pytorch batch without targets, used to get predicted output from noised subject input. Assumed to be the same input text repeated
-    tokens_to_mix,    # Range of tokens to corrupt (begin, end)
-    noise=0.1,        # Level of noise to add
     ):
-    context_manager = get_corrupted_forward_pass_cm(model, tokens_to_mix, noise)    
-    with context_manager as cm:
         if batch is not None:
             probs = score_from_batch(model, batch)
             outputs = probs.mean() # average over noise samples

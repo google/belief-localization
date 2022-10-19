@@ -25,7 +25,7 @@ from dsets import (
     get_tfidf_vectorizer,
 )
 from experiments.causal_trace import ModelAndTokenizer
-from experiments.causal_trace import get_corrupted_forward_pass_cm, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs
+from experiments.causal_trace import layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from rome import ROMEHyperParams, apply_rome_to_model
@@ -357,12 +357,23 @@ def main(
                 else dict()
             )
             # define context based on whether or not we use_noised_subject
-            if not args.use_noised_subject:
-                context_manager = torch.enable_grad()
-            else:
+            if args.use_noised_subject:
+                prng = np.random.RandomState(1) 
+                embed_layername = layername(model, 0, 'embed')
                 e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
-                context_manager = get_corrupted_forward_pass_cm(model, e_range, hparams.editing_noise)
-            with context_manager as cm:
+                # define function that noises embeddings at tokens_to_mix indices
+                def noise_embeddings(x, layer):
+                    if layer == embed_layername:
+                        # If requested, we corrupt a range of token embeddings on batch items x[1:]
+                        if e_range is not None:
+                            b, e = e_range
+                            embeds_noise = torch.from_numpy(prng.randn(x.shape[0], e - b, x.shape[2])).to(x.device)
+                            x[:, b:e] += noise * embeds_noise
+                        # print("added noise to embeds: ", embeds_noise)
+                        return x
+                    else:
+                        return x
+            with torch.enable_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
               request = record["requested_rewrite"]
               paraphrase_prompts = record["paraphrase_prompts"]
               neighborhood_prompts = record["neighborhood_prompts"]
