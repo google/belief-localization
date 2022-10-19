@@ -331,7 +331,7 @@ def main(
                 gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_samples))
                 e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
                 noise = hparams.editing_noise
-                _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=noise)
+                noised_pred_prob, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=noise)
                 target_noised_output = tok.decode([noised_pred_id])
                 request['target_old'] = request['target_new']
                 request['target_new']['str'] = target_noised_output

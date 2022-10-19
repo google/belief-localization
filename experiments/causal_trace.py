@@ -166,8 +166,7 @@ def corrupted_forward_pass(
             outputs = probs.mean() # average over noise samples
             return outputs
         elif gen_batch is not None:
-            pure_noise_batch = {k: v[1:,...] for k,v in gen_batch}
-            pure_noise_outputs = model(**pure_noise_batch)
+            pure_noise_outputs = model(**gen_batch)
             logits = pure_noise_outputs['logits']
             probs = torch.softmax(logits[:, -1], dim=1).mean(dim=0) # average over noise samples
             noised_pred_id = torch.argmax(probs)
