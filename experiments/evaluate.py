@@ -350,8 +350,7 @@ def main(
                 if verbose:
                     score_batch = make_inputs(tok, [prompt], targets=[target_noised_output])
                     init_target_prob = score_from_batch(model, score_batch)
-                    print(init_target_prob)
-                    print(" NEW TARGET PREDICTION: ", target_noised_output, f"with pred prob: {init_target_prob:.4f}")
+                    print(" NEW TARGET PREDICTION: ", target_noised_output, f"with init pred prob: {init_target_prob.item():.4f}")
 
             # Compute weight changes + record weights that changed
             start = time.time()
