@@ -13,5 +13,6 @@
     "attn_module_tmp": "transformer.h.{}.attn",
     "ln_f_module": "transformer.ln_f",
     "lm_head_module": "lm_head",
-    "FT_subj_embeds": true
+    "FT_subj_embeds": true,
+    "editing_noise" : 0.094
 }
