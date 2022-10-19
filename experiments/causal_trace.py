@@ -150,7 +150,7 @@ def corrupted_forward_pass(
                 b, e = tokens_to_mix
                 embeds_noise = torch.from_numpy(prng.randn(x.shape[0], e - b, x.shape[2])).to(x.device)
                 x[:, b:e] += noise * embeds_noise
-            print("added noise to embeds: ", embeds_noise)
+            # print("added noise to embeds: ", embeds_noise)
             return x
         else:
             return x
