@@ -39,7 +39,7 @@ def apply_ft_to_model(
     else:
         embeds_subj_idx = None
 
-    deltas = execute_ft(model, tok, requests, hparams, embedding_token_idx=embeds_subj_idx)
+    deltas = execute_ft(model, tok, requests, hparams, embedding_token_idx=embeds_subj_idx, repeat_input=kwargs['num_noise_samples'])
 
     with torch.no_grad():
         for w_name, upd_matrix in deltas.items():
@@ -65,6 +65,7 @@ def execute_ft(
     requests: List[Dict],
     hparams: FTHyperParams,
     embedding_token_idx = None,
+    repeat_input = 1,
     **kwargs: Any,
 ) -> Dict[str, Tuple[torch.Tensor]]:
     """
@@ -124,6 +125,8 @@ def execute_ft(
             target_ids = tok(tgt, return_tensors="pt", padding=True)["input_ids"].to(
                 "cuda"
             )
+            inputs = inputs.repeat(repeat_input,1)
+            target_ids = target_ids.repeat(target_ids,1)
             last_token_inds = inputs["attention_mask"].sum(dim=1) - 1
             loss_mask = target_ids != tok.unk_token_id
 

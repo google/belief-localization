@@ -54,7 +54,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
   if central_layer == -1:
       assert alg_name == 'FT'
       return_dict = {
-          'lr': 5e-4,
+          'lr': 1e-3,
           'num_steps': 100,
           'norm_constraint': .01,
           'layers': [-1],
@@ -360,8 +360,10 @@ def main(
                 else dict()
             )
             # define context based on whether or not we use_noised_subject
+            # also pass num_noise_samples to apply_algo
             if args.use_noised_subject:
                 prng = np.random.RandomState(1) 
+                num_noise_samples = 10
                 embed_layername = layername(model, 0, 'embed')
                 e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
                 # define function that noises embeddings at tokens_to_mix indices
@@ -376,6 +378,8 @@ def main(
                         return x
                     else:
                         return x
+            else:
+                num_noise_samples = 1
             with torch.enable_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
               request = record["requested_rewrite"]
               paraphrase_prompts = record["paraphrase_prompts"]
@@ -387,6 +391,7 @@ def main(
                   hparams,
                   copy=False,
                   return_orig_weights=True,
+                  num_noise_samples=num_noise_samples,
                   **args_conserve_memory,
               )
             exec_time = time.time() - start
