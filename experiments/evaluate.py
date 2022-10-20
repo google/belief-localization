@@ -276,7 +276,9 @@ def main(
     important_hparam_names = override_hparams.keys() if override_hparams is not None else ['layers']
     important_hparams = {k:v for k,v in hparams.__dict__.items() if any([k==name for name in important_hparam_names])}
     if args.use_noised_target:
-        important_hparams['use_noised_target'] = 'T'
+        important_hparams['ntarget'] = 'T'
+    if args.use_noised_subject:
+        important_hparams['nsubject'] = 'T'
     exp_name = ROME_experiment_name(model_name.split('/')[-1],
                                     alg_name,
                                     ds_name,
