@@ -620,8 +620,10 @@ if __name__ == "__main__":
     sweep_params = {'ws': window_sizes, 'layers': args.edit_layer}
     if args.use_noised_target:
         obj = '_noise-target'
-    if args.use_noised_subject:
+    elif args.use_noised_subject:
         obj = '_noise-subject'
+    else:
+        obj = ''
     ovr_exp_name = sweep_experiment_name(_model_name, alg_name, ds_name, sweep_params)
     file_name = f'{ovr_exp_name}{obj}_n{num_points}.csv'
     save_path = f'{BASE_DIR}/results/{file_name}'
