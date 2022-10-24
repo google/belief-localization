@@ -385,7 +385,9 @@ def main(
                 e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
                 # define function that noises embeddings at tokens_to_mix indices
                 def noise_embeddings(x, layer):
-                    if (x.shape[0] == hparams.context_template_length_params and x.shape[1] == 1):
+                    print(x.shape)
+                    print(hparams.context_template_length_params)
+                    if (x.shape[0] == hparams.context_template_length_params[1] and x.shape[1] == 1):
                         return x
                     if layer == embed_layername:
                         # If requested, we corrupt a range of token embeddings on batch items x[1:]
