@@ -328,6 +328,7 @@ def main(
             request = record["requested_rewrite"]
             subject = record["requested_rewrite"]['subject']
             prompt = request['prompt'].format(subject)
+            target_true = request['target_true']['str']
             paraphrase_prompts = record["paraphrase_prompts"]
             neighborhood_prompts = record["neighborhood_prompts"]
             if verbose:
@@ -356,13 +357,13 @@ def main(
                     for text in snips.names_to_samples[request['subject']][:2]:
                         print(f" Essence text: {text[:200]}")
             
-            # now get the noised output prediction if we are editing to change prediction to noise output rather than original output
+            # objective-specific things. 
+            # get the noised output prediction if we are editing to change prediction to noise output rather than original output
+            num_samples = 10
+            e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
             if args.use_noised_target:
-                num_samples = 10
                 gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_samples))
-                e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
-                noise = hparams.editing_noise
-                _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=noise)
+                _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise)
                 target_noised_output = tok.decode([noised_pred_id])
                 request['target_old'] = request['target_new']
                 request['target_new']['str'] = target_noised_output
@@ -371,6 +372,10 @@ def main(
                     score_batch = make_inputs(tok, [prompt], targets=[target_noised_output])
                     init_target_prob = score_from_batch(model, score_batch)
                     print(f" NEW TARGET PREDICTION: \"{target_noised_output}\" with init pred prob: {init_target_prob.item():.4f}")
+            # compute p(o|s-noise, r)
+            if args.target_is_prior:
+                batch = make_inputs(mt.tokenizer, prompts=[prompt] * num_samples, targets=[target_true] * num_samples)
+                prior_prob = corrupted_forward_pass(mt.model, batch, None, tokens_to_mix=e_range, noise=hparams.editing_noise)
 
             # Compute weight changes + record weights that changed
             start = time.time()
@@ -386,10 +391,6 @@ def main(
                 num_noise_samples = 10
                 embed_layername = layername(model, 0, 'embed')
                 e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
-                print(e_range)
-                print(subject)
-                print(prompt)
-                import pdb; pdb.set_trace()
                 # define function that noises embeddings at tokens_to_mix indices
                 def noise_embeddings(x, layer):
                     if layer == embed_layername:

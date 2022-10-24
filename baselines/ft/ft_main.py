@@ -137,6 +137,8 @@ def execute_ft(
             target_ids = target_ids.repeat(repeat_input,1)
             last_token_inds = inputs["attention_mask"].sum(dim=1) - 1
             loss_mask = target_ids != tok.unk_token_id
+            if args.weight_based_tracing:
+                inputs['return_hidden_states'] = True
 
             opt.zero_grad()
             bs = inputs["input_ids"].shape[0]
@@ -153,7 +155,7 @@ def execute_ft(
                 pred_prob = -torch.exp(loss)
                 loss = torch.abs(pred_prob - prior_prob) 
             if args.weight_based_tracing:
-                hidden_representations = outputs.hidden_representations
+                hidden_states = outputs.hidden_states
                 pass
                 
             loss = loss.mean()

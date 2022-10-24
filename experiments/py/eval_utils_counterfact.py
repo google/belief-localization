@@ -61,6 +61,10 @@ def compute_rewrite_quality_counterfact(
         neighborhood_prompts,
         attribute_prompts,
     ]
+    if args.verbose:
+        print("rewrite_prompts", len(rewrite_prompts))
+        print("paraphrase_prompts", len(paraphrase_prompts))
+        print("neighborhood_prompts", len(neighborhood_prompts))
     
     # Flatten all the evaluated prefixes into one list.
     probs = test_batch_prediction(
@@ -129,6 +133,7 @@ def test_batch_prediction(
         def noise_embeddings(x, layer):
             # corrrupt subject embeddings depending on the datapoint index
             noise_len = e_ranges[0][1] - e_ranges[0][0] # rewrite prompts are first, so they will always include the subject, so safe to index here
+            print(e_ranges)
             import pdb; pdb.set_trace()
             if layer == embed_layername:
                 embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
@@ -137,8 +142,8 @@ def test_batch_prediction(
                     if e_range is not None:
                         b, e = e_range
                         x[i, b:e] += args.hparams.editing_noise * embeds_noise[i]
-                print(f"datapoint {i}: {prefixes[i]}")
-                print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i])
+                    print(f"datapoint {i}: {prefixes[i]}")
+                    print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i] if e_range is not None else None)
                 return x
             else:
                 return x
@@ -218,7 +223,9 @@ def test_generation(
             # define function that noises embeddings at tokens_to_mix indices
             def noise_embeddings(x, layer):
                 # corrrupt subject embeddings depending on the datapoint index
-                noise_len = e_ranges[0][1] - e_ranges[0][0]
+                noise_len = e_ranges[0][1] - e_ranges[0][0] 
+                print(e_ranges)
+                import pdb; pdb.set_trace()
                 if layer == embed_layername:
                     embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
                     for i in range(len(e_ranges)):
@@ -226,8 +233,8 @@ def test_generation(
                         if e_range is not None:
                             b, e = e_range
                             x[i, b:e] += args.hparams.editing_noise * embeds_noise[i]
-                    print(f"essence text {i}: {essence_texts[i]}")
-                    print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i])
+                        print(f"essence text atapoint {i}: {prefixes[i]}")
+                        print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i] if e_range is not None else None)
                     return x
                 else:
                     return x
