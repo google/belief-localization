@@ -641,7 +641,7 @@ if __name__ == "__main__":
     print(f"saving csv at {save_path}...")
     print("sample rows:")
     print(results_df.loc[:,['case_id', 'subject', 'target', 'request', 'post_rewrite_success', 'post_neighborhood_success', 'post_paraphrase_success', 'post_score', 'essence_ppl_diff']])
-    metrics = ['post_rewrite_success', 'post_rewrite_magnitude', 'post_neighborhood_success', 'post_neighborhood_magnitude', 'post_paraphrase_success', 'post_paraphrase_magnitude', 'essence_score', 'essence_ppl_diff', 'post_score']
+    metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_score', 'essence_ppl_diff', 'post_score']
     if len(window_sizes) == 1 and len(central_layers) == 1:
         print("\n final metrics: ")
         for metric in metrics:
