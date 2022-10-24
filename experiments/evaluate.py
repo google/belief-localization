@@ -385,6 +385,10 @@ def main(
                 e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
                 # define function that noises embeddings at tokens_to_mix indices
                 def noise_embeddings(x, layer):
+                    print(x.shape)
+                    print(x.shape == [hparams.context_template_length_params, 1, x.shape[2])
+                    if x.shape == [hparams.context_template_length_params, 1, x.shape[2]]:
+                        return x
                     if layer == embed_layername:
                         # If requested, we corrupt a range of token embeddings on batch items x[1:]
                         if e_range is not None:
@@ -399,9 +403,9 @@ def main(
             if args.weight_based_tracing:
                 gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
                 gen_batch['output_hidden_states'] = True
+                import pdb; pdb.set_trace()
                 _, _, corrupted_hidden_states = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise, output_hidden_states=True)
                 uncorrupted_hidden_states = mt.model(**gen_batch)
-                import pdb; pdb.set_trace()
                 # splice uncorrupted hidden_states into corrupted_hidden_states where they are restored
                 pass
 

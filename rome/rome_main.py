@@ -13,7 +13,6 @@ from .rome_hparams import ROMEHyperParams
 
 CONTEXT_TEMPLATES_CACHE = None
 
-
 def apply_rome_to_model(
     args,
     model: AutoModelForCausalLM,
