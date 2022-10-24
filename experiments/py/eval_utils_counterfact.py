@@ -133,19 +133,21 @@ def test_batch_prediction(
         # define function that noises embeddings at tokens_to_mix indices
         def noise_embeddings(x, layer):
             # corrrupt subject embeddings depending on the datapoint index
-            noise_len = e_ranges[0][1] - e_ranges[0][0] # rewrite prompts are first, so they will always include the subject, so safe to index here
+            noise_lens = [e_range[1] - e_range[0] for e_range in e_ranges] # tokenization could differ if subject starts sentence vs is in middle of sentence. find max len needed here, cut noise off as needed later
+            max_noise_len = max(noise_lens)
             print(e_ranges)
             print('num ranges: ', len(e_ranges))
             print('x shape: ', x.shape)
             print('noise_len: ', noise_len)
             if layer == embed_layername:
-                embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
+                embeds_noise = torch.from_numpy(prng.randn(x.shape[0], max_noise_len, x.shape[2])).to(x.device)
                 for i in range(len(e_ranges)):
                     e_range = e_ranges[i]
-                    print(f'about to add noise ({embeds_noise[i].shape}) to embeddings range {e_range}')
+                    print(f'about to add noise ({embeds_noise[i, :noise_len, :].shape}) to embeddings range {e_range}')
                     if e_range is not None:
                         b, e = e_range
-                        x[i, b:e] += args.hparams.editing_noise * embeds_noise[i]
+                        noise_len = b-e
+                        x[i, b:e] += args.hparams.editing_noise * embeds_noise[i, :noise_len, :]
                     print(f"datapoint {i}: {prefixes[i]}")
                     print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i] if e_range is not None else None)
                 return x
