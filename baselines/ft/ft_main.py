@@ -32,6 +32,7 @@ def apply_ft_to_model(
     if copy:
         model = deepcopy(model)
 
+    # get more ft arguments; subj idx for embedding finetuning, number of times to repeat sample for optimization under noised subjects, and 
     if min(hparams.layers) == -1 and hparams.FT_subj_embeds:
         assert len(requests) == 1
         subject = requests[0]['subject']
@@ -39,8 +40,10 @@ def apply_ft_to_model(
         embeds_subj_idx = np.array(subject_idx)
     else:
         embeds_subj_idx = None
+    num_noise_samples = kwargs.pop('num_noise_samples', None)
+    prior_prob = kwargs.pop('prior_prob', None)
 
-    deltas = execute_ft(args, model, tok, requests, hparams, embedding_token_idx=embeds_subj_idx, repeat_input=kwargs['num_noise_samples'])
+    deltas = execute_ft(args, model, tok, requests, hparams, embedding_token_idx=embeds_subj_idx, repeat_input=num_noise_samples, prior_prob=prior_prob)
 
     with torch.no_grad():
         for w_name, upd_matrix in deltas.items():
@@ -68,6 +71,7 @@ def execute_ft(
     hparams: FTHyperParams,
     embedding_token_idx = None,
     repeat_input = 1,
+    prior_prob = 0,
     **kwargs: Any,
 ) -> Dict[str, Tuple[torch.Tensor]]:
     """
@@ -105,7 +109,10 @@ def execute_ft(
 
     # Define inputs
     texts = [r["prompt"].format(r["subject"]) for r in requests]
-    targets = [r["target_new"]["str"] for r in requests]
+    if not args.target_is_prior:
+        targets = [r["target_new"]["str"] for r in requests]
+    else:
+        targets = [r["target_true"]["str"] for r in requests]
 
     # Configure optimizer / gradients
     opt = torch.optim.Adam(
@@ -134,16 +141,22 @@ def execute_ft(
             opt.zero_grad()
             bs = inputs["input_ids"].shape[0]
             outputs = model(**inputs)
-            last_token_logits = logits = outputs.logits[torch.arange(bs), last_token_inds]
+            last_token_logits = outputs.logits[torch.arange(bs), last_token_inds]
 
             # compute loss based on objective
-            # if (not args.)
-            probs = torch.nn.functional.log_softmax(last_token_logits, dim=-1)
-            loss = -(torch.gather(probs, 1, target_ids) * loss_mask).sum(
-                1
-            ) / loss_mask.sum(1)
+            if not args.weight_based_tracing:
+                probs = torch.nn.functional.log_softmax(last_token_logits, dim=-1)
+                loss = -(torch.gather(probs, 1, target_ids) * loss_mask).sum(
+                    1
+                ) / loss_mask.sum(1)
+            if args.target_is_prior:
+                pred_prob = -torch.exp(loss)
+                loss = torch.abs(pred_prob - prior_prob) 
+            if args.weight_based_tracing:
+                hidden_representations = outputs.hidden_representations
+                pass
+                
             loss = loss.mean()
-            # print(f"Batch loss at epoch {it}: {loss.item():.4f}")
             loss_meter.update(loss.item(), n=bs)
 
             if loss.item() >= 1e-2:

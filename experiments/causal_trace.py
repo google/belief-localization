@@ -709,6 +709,9 @@ def find_token_range(tokenizer, token_array=None, substring=None, prompt_str=Non
       for punc in ['.', ',', '!']:
         substring = substring.replace(f" {punc}", punc)
         whole_string = whole_string.replace(f" {punc}", punc)
+      # just return None if substring not in whole_string now
+      if substring not in whole_string:
+          return None
       char_loc = whole_string.index(substring)
     loc = 0
     tok_start, tok_end = None, None

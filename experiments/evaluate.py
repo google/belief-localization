@@ -532,7 +532,7 @@ if __name__ == "__main__":
         help="Rather than change o-true to o-new for (s,r,.) input, change o-noise to o-true for (s-noise, r,.) input",
     )
     parser.add_argument(
-        "--erase_fact",
+        "--target_is_prior",
         action="store_true",
         help="See paper for description",
     )
