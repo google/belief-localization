@@ -386,9 +386,12 @@ def main(
                 num_noise_samples = 10
                 embed_layername = layername(model, 0, 'embed')
                 e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
+                print(e_range)
+                print(subject)
+                print(prompt)
+                import pdb; pdb.set_trace()
                 # define function that noises embeddings at tokens_to_mix indices
                 def noise_embeddings(x, layer):
-                    import pdb; pdb.set_trace()
                     if layer == embed_layername:
                         # If requested, we corrupt a range of token embeddings on batch items x[1:]
                         if e_range is not None:
@@ -406,6 +409,7 @@ def main(
               paraphrase_prompts = record["paraphrase_prompts"]
               neighborhood_prompts = record["neighborhood_prompts"]
               edited_model, weights_copy = apply_algo(
+                  args,
                   model,
                   tok,
                   [request],
@@ -526,6 +530,16 @@ if __name__ == "__main__":
         "--use_noised_subject",
         action="store_true",
         help="Rather than change o-true to o-new for (s,r,.) input, change o-noise to o-true for (s-noise, r,.) input",
+    )
+    parser.add_argument(
+        "--erase_fact",
+        action="store_true",
+        help="See paper for description",
+    )
+    parser.add_argument(
+        "--weight_based_tracing",
+        action="store_true",
+        help="See paper for description",
     )
     parser.add_argument(
         "--conserve_memory",

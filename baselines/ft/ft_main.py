@@ -12,6 +12,7 @@ from .ft_hparams import FTHyperParams
 
 
 def apply_ft_to_model(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     requests: List[Dict],
@@ -39,7 +40,7 @@ def apply_ft_to_model(
     else:
         embeds_subj_idx = None
 
-    deltas = execute_ft(model, tok, requests, hparams, embedding_token_idx=embeds_subj_idx, repeat_input=kwargs['num_noise_samples'])
+    deltas = execute_ft(args, model, tok, requests, hparams, embedding_token_idx=embeds_subj_idx, repeat_input=kwargs['num_noise_samples'])
 
     with torch.no_grad():
         for w_name, upd_matrix in deltas.items():
@@ -60,6 +61,7 @@ def apply_ft_to_model(
 
 
 def execute_ft(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     requests: List[Dict],
@@ -131,9 +133,12 @@ def execute_ft(
 
             opt.zero_grad()
             bs = inputs["input_ids"].shape[0]
-            probs = torch.nn.functional.log_softmax(
-                model(**inputs).logits[torch.arange(bs), last_token_inds], dim=-1
-            )
+            outputs = model(**inputs)
+            last_token_logits = logits = outputs.logits[torch.arange(bs), last_token_inds]
+
+            # compute loss based on objective
+            # if (not args.)
+            probs = torch.nn.functional.log_softmax(last_token_logits, dim=-1)
             loss = -(torch.gather(probs, 1, target_ids) * loss_mask).sum(
                 1
             ) / loss_mask.sum(1)

@@ -15,6 +15,7 @@ CONTEXT_TEMPLATES_CACHE = None
 
 
 def apply_rome_to_model(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     requests: List[Dict],
@@ -38,7 +39,7 @@ def apply_rome_to_model(
     weights_copy = {}
 
     for i, request in enumerate(requests):
-        deltas = execute_rome(model, tok, request, hparams)
+        deltas = execute_rome(args, model, tok, request, hparams)
 
         with torch.no_grad():
             for w_name, (delta_u, delta_v) in deltas.items():
@@ -58,6 +59,7 @@ def apply_rome_to_model(
 
 
 def execute_rome(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     request: Dict,
@@ -90,6 +92,7 @@ def execute_rome(
 
     # Update loop: sequentially intervene at each specified layer
     deltas = {}
+    import pdb; pdb.set_trace()
     for layer in sorted(hparams.layers):
         # Compute rank-1 update matrix
         left_vector: torch.Tensor = compute_u(
