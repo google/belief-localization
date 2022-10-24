@@ -91,7 +91,6 @@ def execute_rome(
 
     # Update loop: sequentially intervene at each specified layer
     deltas = {}
-    import pdb; pdb.set_trace()
     for layer in sorted(hparams.layers):
         # Compute rank-1 update matrix
         left_vector: torch.Tensor = compute_u(
@@ -165,7 +164,7 @@ def get_context_templates(model, tok, length_params):
                     generate_fast(
                         model,
                         tok,
-                        ["<|endoftext|>"],
+                        [tok.eos_token],
                         n_gen_per_prompt=n_gen,
                         max_out_len=length,
                     )
