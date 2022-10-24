@@ -386,7 +386,7 @@ def main(
                 # define function that noises embeddings at tokens_to_mix indices
                 def noise_embeddings(x, layer):
                     print(x.shape)
-                    print(x.shape == [hparams.context_template_length_params, 1, x.shape[2])
+                    print(x.shape == [hparams.context_template_length_params, 1, x.shape[2]])
                     if x.shape == [hparams.context_template_length_params, 1, x.shape[2]]:
                         return x
                     if layer == embed_layername:
