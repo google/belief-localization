@@ -133,8 +133,6 @@ def test_batch_prediction(
         def noise_embeddings(x, layer):
             # corrrupt subject embeddings depending on the datapoint index
             noise_len = e_ranges[0][1] - e_ranges[0][0] # rewrite prompts are first, so they will always include the subject, so safe to index here
-            print(e_ranges)
-            import pdb; pdb.set_trace()
             if layer == embed_layername:
                 embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
                 for i in range(len(e_ranges)):
@@ -142,8 +140,8 @@ def test_batch_prediction(
                     if e_range is not None:
                         b, e = e_range
                         x[i, b:e] += args.hparams.editing_noise * embeds_noise[i]
-                    print(f"datapoint {i}: {prefixes[i]}")
-                    print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i] if e_range is not None else None)
+                    # print(f"datapoint {i}: {prefixes[i]}")
+                    # print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i] if e_range is not None else None)
                 return x
             else:
                 return x
@@ -214,35 +212,25 @@ def test_generation(
 
         # calculate the token indices for the subject for each ESSENCE TEXT
         if args.use_noised_subject:
-            prng = np.random.RandomState(1) 
-            embed_layername = layername(model, 0, 'embed')
-            e_ranges = []
-            for essence_text in essence_texts:
-                e_range = find_token_range(tok, substring=subject, prompt_str=essence_text)
-                e_ranges.append(e_range)
-            # define function that noises embeddings at tokens_to_mix indices
-            def noise_embeddings(x, layer):
-                # corrrupt subject embeddings depending on the datapoint index
-                noise_len = e_ranges[0][1] - e_ranges[0][0] 
-                print(e_ranges)
-                import pdb; pdb.set_trace()
-                if layer == embed_layername:
-                    embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
-                    for i in range(len(e_ranges)):
-                        e_range = e_ranges[i]
-                        if e_range is not None:
-                            b, e = e_range
-                            x[i, b:e] += args.hparams.editing_noise * embeds_noise[i]
-                        print(f"essence text atapoint {i}: {prefixes[i]}")
-                        print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i] if e_range is not None else None)
-                    return x
-                else:
-                    return x
-
-        with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext():
             ppls = []
             for essence_text in essence_texts:
-                ppl = perplexity(model, tok, essence_text, max_input_length=100)
+                e_range = find_token_range(tok, substring=subject, prompt_str=essence_text)
+                prng = np.random.RandomState(1) 
+                embed_layername = layername(model, 0, 'embed')
+                # define function that noises embeddings at tokens_to_mix indices
+                def noise_embeddings(x, layer):
+                    # corrrupt subject embeddings depending on the datapoint index
+                    noise_len = e_range[1] - e_range[0]
+                    if layer == embed_layername:
+                        embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
+                        if e_range is not None:
+                            b, e = e_range
+                            x[:, b:e] += args.hparams.editing_noise * embeds_noise
+                        return x
+                    else:
+                        return x
+                with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext():
+                    ppl = perplexity(model, tok, essence_text, max_input_length=100)
                 ppls.append(ppl)
             avg_ppl = np.mean(ppls)
             return_dict.update({"essence_score": avg_ppl, "essence_text": essence_texts})

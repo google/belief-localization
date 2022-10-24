@@ -359,10 +359,10 @@ def main(
             
             # objective-specific things. 
             # get the noised output prediction if we are editing to change prediction to noise output rather than original output
-            num_samples = 10
+            num_noise_samples = 10
             e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
             if args.use_noised_target:
-                gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_samples))
+                gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
                 _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise)
                 target_noised_output = tok.decode([noised_pred_id])
                 request['target_old'] = request['target_new']
@@ -374,21 +374,13 @@ def main(
                     print(f" NEW TARGET PREDICTION: \"{target_noised_output}\" with init pred prob: {init_target_prob.item():.4f}")
             # compute p(o|s-noise, r)
             if args.target_is_prior:
-                batch = make_inputs(mt.tokenizer, prompts=[prompt] * num_samples, targets=[target_true] * num_samples)
+                batch = make_inputs(mt.tokenizer, prompts=[prompt] * num_noise_samples, targets=[target_true] * num_noise_samples)
                 prior_prob = corrupted_forward_pass(mt.model, batch, None, tokens_to_mix=e_range, noise=hparams.editing_noise)
-
-            # Compute weight changes + record weights that changed
-            start = time.time()
-            args_conserve_memory = (
-                dict(return_orig_weights_device=("cpu" if conserve_memory else "cuda"))
-                if conserve_memory
-                else dict()
-            )
-            # define context based on whether or not we use_noised_subject
-            # also pass num_noise_samples to apply_algo
+            else:
+                prior_prob = None
+            # make noise_embeddings function for nethook contextmanager if noising the subject
             if args.use_noised_subject:
                 prng = np.random.RandomState(1) 
-                num_noise_samples = 10
                 embed_layername = layername(model, 0, 'embed')
                 e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
                 # define function that noises embeddings at tokens_to_mix indices
@@ -403,8 +395,18 @@ def main(
                         return x
                     else:
                         return x
-            else:
-                num_noise_samples = 1
+            # get hidden representations from corrupted+uncorrupted forward passes to use as targets for weight editing
+            if args.weight_based_tracing:
+                
+                pass
+
+            # Compute weight changes + record weights that changed
+            start = time.time()
+            args_conserve_memory = (
+                dict(return_orig_weights_device=("cpu" if conserve_memory else "cuda"))
+                if conserve_memory
+                else dict()
+            )
             with torch.enable_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
               request = record["requested_rewrite"]
               paraphrase_prompts = record["paraphrase_prompts"]
@@ -418,6 +420,7 @@ def main(
                   copy=False,
                   return_orig_weights=True,
                   num_noise_samples=num_noise_samples,
+                  prior_prob=prior_prob,
                   **args_conserve_memory,
               )
             exec_time = time.time() - start

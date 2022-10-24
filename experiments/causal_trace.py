@@ -137,10 +137,11 @@ def corrupted_forward_pass(
     gen_batch,        # Set of inputs tokenized into pytorch batch without targets, used to get predicted output from noised subject input. Assumed to be the same input text repeated
     tokens_to_mix,    # Range of tokens to corrupt (begin, end)
     noise=0.1,        # Level of noise to add
+    output_hidden_states=False,
     ):
     prng = np.random.RandomState(1)  # For reproducibility, use pseudorandom noise
     embed_layername = layername(model, 0, 'embed')
-
+    assert batch is None or gen_batch is None
     # define function that noises embeddings at tokens_to_mix indices
     def patch_rep(x, layer):
         if layer == embed_layername:
@@ -163,12 +164,17 @@ def corrupted_forward_pass(
             outputs = probs.mean() # average over noise samples
             return outputs
         elif gen_batch is not None:
+            if output_hidden_states:
+                gen_batch['output_hidden_states'] = True
             pure_noise_outputs = model(**gen_batch)
-            logits = pure_noise_outputs['logits']
+            logits = pure_noise_outputs.logits
             probs = torch.softmax(logits[:, -1], dim=1).mean(dim=0) # average over noise samples
             noised_pred_id = torch.argmax(probs)
-            outputs = probs[noised_pred_id]
-            return outputs, noised_pred_id
+            pred_prob = probs[noised_pred_id]
+            outputs = (pred_prob, noised_pred_id,)
+            if output_hidden_states:
+                outputs += (pure_noise_outputs.hidden_states)
+            return outputs
 
 
 def trace_with_repatch(
