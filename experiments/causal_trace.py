@@ -238,7 +238,6 @@ def trace_with_repatch(
 def trace_with_patch(
     model,            # The model
     batch,            # A set of inputs
-    gen_batch,        # Set of inputs tokenized into pytorch batch without targets, used to get predicted output from noised subject input
     states_to_patch,  # A list of (token index, layername) triples to restore
     pred_id,          # token id of answer probabilities to collect
     tokens_to_mix,    # Range of tokens to corrupt (begin, end)
@@ -325,7 +324,7 @@ def trace_important_states(model, num_layers, batch, e_range, pred_id=None, nois
 
 
 def trace_important_window(
-    model, num_layers, batch, gen_batch, e_range, pred_id=None, kind=None, window=10, noise=0.1, 
+    model, num_layers, batch, e_range, pred_id=None, kind=None, window=10, noise=0.1, 
 ):
     if 'target_indicators' in batch:
       ntoks = batch["input_ids"].shape[1] - batch["target_indicators"].sum(-1)[0]
@@ -372,19 +371,17 @@ def calculate_hidden_flow(
     pred_id = None 
     batch_size = (samples+1)
     batch = make_inputs(mt.tokenizer, prompts=[prompt] * batch_size, targets=[answer] * batch_size)
-    gen_batch = simple_make_inputs(mt.tokenizer, prompts=[prompt] * batch_size)
     e_range = find_token_range(mt.tokenizer, substring=subject, prompt_str=prompt)
-    low_score, _ = trace_with_patch(mt.model, batch, gen_batch, [], pred_id, tokens_to_mix=e_range, noise=noise)
+    low_score, _ = trace_with_patch(mt.model, batch, [], pred_id, tokens_to_mix=e_range, noise=noise)
     if not kind:
         differences = trace_important_states(
-            mt.model, mt.num_layers, batch, gen_batch, e_range, pred_id, noise=noise,
+            mt.model, mt.num_layers, batch, e_range, pred_id, noise=noise,
         )
     else:
         differences = trace_important_window(
             mt.model,
             mt.num_layers,
             batch,
-            gen_batch,
             e_range,
             pred_id,
             noise=noise,

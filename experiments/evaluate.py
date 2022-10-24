@@ -617,7 +617,7 @@ if __name__ == "__main__":
                     verbose=args.verbose,
                     overwrite=args.overwrite,
                 )
-            # accumulate reuslts
+            # accumulate results
             exp_name = ROME_experiment_name_from_override_params(args, model_name, alg_name, ds_name, override_hparams, hparams_class)
             editing_results_df = make_editing_results_df(exp_name, n=num_points)
             editing_results_df['edit_method'] = alg_name
@@ -633,7 +633,7 @@ if __name__ == "__main__":
     file_name = f'{ovr_exp_name}.csv'
     save_path = f'{BASE_DIR}/results/{file_name}'
     results_df.to_csv(save_path, index=False)
-    # upload results csv to google bucket    
+    # upload results csv to google bucket
     storage_client = storage.Client()
     bucket = storage_client.get_bucket('research-brain-belief-localization-xgcp')
     blob = bucket.blob(f'output/{file_name}')

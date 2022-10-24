@@ -129,6 +129,7 @@ def test_batch_prediction(
         def noise_embeddings(x, layer):
             # corrrupt subject embeddings depending on the datapoint index
             noise_len = e_ranges[0][1] - e_ranges[0][0] # rewrite prompts are first, so they will always include the subject, so safe to index here
+            import pdb; pdb.set_trace()
             if layer == embed_layername:
                 embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
                 for i in range(len(e_ranges)):
