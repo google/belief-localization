@@ -101,7 +101,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
         return_dict['v_grad_num_steps'] = 50
   return return_dict
 
-def sweep_experiment_name(model_name, alg_name, ds_name, sweep_params):
+def sweep_experiment_name(args, model_name, alg_name, ds_name, sweep_params):
   exp_name = f'{model_name}_{alg_name}_outputs_{ds_name}_editing_sweep'  
   for k,v in sweep_params.items():
     _v = str(v).replace(", ", "-")
@@ -110,10 +110,20 @@ def sweep_experiment_name(model_name, alg_name, ds_name, sweep_params):
     if _v == "-2":
         _v = "all"
     exp_name += f"_{k[:5]}-{_v}"
-  return exp_name
+  if args.use_noised_target:
+    obj = '_noise-target'
+  elif args.use_noised_subject:
+    obj = '_noise-subject'
+  else:
+    obj = ''
+  return f'{exp_name}{obj}_n{args.dataset_size_limit}.csv'
 
-def ROME_experiment_name(model_name, alg_name, ds_name, hparams_to_add):
+def ROME_experiment_name(args, model_name, alg_name, ds_name, hparams_to_add):
   exp_name = f'{model_name}/{alg_name}_outputs_{ds_name}'
+  if args.use_noised_target:
+    hparams_to_add['ntarget'] = 'T'
+  if args.use_noised_subject:
+    hparams_to_add['nsubject'] = 'T'
   for k,v in hparams_to_add.items():
     _v = str(v).replace(", ", "-")
     if _v == "-1":
@@ -121,7 +131,7 @@ def ROME_experiment_name(model_name, alg_name, ds_name, hparams_to_add):
     exp_name += f"_{k[:5]}-{_v}"
   return exp_name
 
-def ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, override_hparams, hparams_class):
+def ROME_experiment_name_from_override_params(args, model_name, alg_name, ds_name, override_hparams, hparams_class):
   _model_name = model_name.replace('/', '_')
   params_path = os.path.join(f'{CODE_DIR}/hparams/', alg_name, f"{_model_name}.json")
   if alg_name == 'FT':
@@ -131,7 +141,8 @@ def ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, ove
       hparams.__dict__.update(override_hparams)
   important_hparam_names = override_hparams.keys() if override_hparams is not None else ['layers']
   important_hparams = {k:v for k,v in hparams.__dict__.items() if any([k==name for name in important_hparam_names])}
-  exp_name = ROME_experiment_name(model_name.split('/')[-1],
+  exp_name = ROME_experiment_name(args,
+                                  model_name.split('/')[-1],
                                   alg_name,
                                   ds_name,
                                   important_hparams)
@@ -275,11 +286,8 @@ def main(
     # Determine run directory
     important_hparam_names = override_hparams.keys() if override_hparams is not None else ['layers']
     important_hparams = {k:v for k,v in hparams.__dict__.items() if any([k==name for name in important_hparam_names])}
-    if args.use_noised_target:
-        important_hparams['ntarget'] = 'T'
-    if args.use_noised_subject:
-        important_hparams['nsubject'] = 'T'
-    exp_name = ROME_experiment_name(model_name.split('/')[-1],
+    exp_name = ROME_experiment_name(args,
+                                    model_name.split('/')[-1],
                                     alg_name,
                                     ds_name,
                                     important_hparams)
@@ -609,7 +617,7 @@ if __name__ == "__main__":
                     overwrite=args.overwrite,
                 )
             # accumulate reuslts
-            exp_name = ROME_experiment_name_from_override_params(model_name, alg_name, ds_name, override_hparams, hparams_class)
+            exp_name = ROME_experiment_name_from_override_params(args, model_name, alg_name, ds_name, override_hparams, hparams_class)
             editing_results_df = make_editing_results_df(exp_name, n=num_points)
             editing_results_df['edit_method'] = alg_name
             editing_results_df['edit_central_layer'] = central_layer
@@ -620,14 +628,8 @@ if __name__ == "__main__":
     results_df = pd.concat(results_dfs)
     _model_name = model_name.split('/')[-1]
     sweep_params = {'ws': window_sizes, 'layers': args.edit_layer}
-    if args.use_noised_target:
-        obj = '_noise-target'
-    elif args.use_noised_subject:
-        obj = '_noise-subject'
-    else:
-        obj = ''
-    ovr_exp_name = sweep_experiment_name(_model_name, alg_name, ds_name, sweep_params)
-    file_name = f'{ovr_exp_name}{obj}_n{num_points}.csv'
+    ovr_exp_name = sweep_experiment_name(args, _model_name, alg_name, ds_name, sweep_params)
+    file_name = f'{ovr_exp_name}.csv'
     save_path = f'{BASE_DIR}/results/{file_name}'
     results_df.to_csv(save_path, index=False)
     # upload results csv to google bucket    
