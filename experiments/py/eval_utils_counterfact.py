@@ -141,10 +141,10 @@ def test_batch_prediction(
                 embeds_noise = torch.from_numpy(prng.randn(x.shape[0], max_noise_len, x.shape[2])).to(x.device)
                 for i in range(len(e_ranges)):
                     e_range = e_ranges[i]
-                    print(f'about to add noise ({embeds_noise[i, :noise_len, :].shape}) to embeddings range {e_range}')
                     if e_range is not None:
                         b, e = e_range
                         noise_len = b-e
+                        print(f'about to add noise ({embeds_noise[i, :noise_len, :].shape}) to embeddings range {e_range}')
                         x[i, b:e] += args.hparams.editing_noise * embeds_noise[i, :noise_len, :]
                     print(f"datapoint {i}: {prefixes[i]}")
                     print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i] if e_range is not None else None)
