@@ -98,7 +98,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     if alg_name == "FT":
         return_dict['num_steps'] = 50
     if alg_name == "ROME":
-        return_dict['v_grad_num_steps'] = 50
+        return_dict['v_num_grad_steps'] = 50
   return return_dict
 
 def sweep_experiment_name(args, model_name, alg_name, ds_name, sweep_params):

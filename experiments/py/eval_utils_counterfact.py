@@ -61,11 +61,6 @@ def compute_rewrite_quality_counterfact(
         neighborhood_prompts,
         attribute_prompts,
     ]
-    if args.verbose:
-        print("rewrite_prompts", len(rewrite_prompts))
-        print("paraphrase_prompts", len(paraphrase_prompts))
-        print("neighborhood_prompts", len(neighborhood_prompts))
-        print("attribute_prompts", len(attribute_prompts))
     
     # Flatten all the evaluated prefixes into one list.
     probs = test_batch_prediction(
@@ -135,8 +130,8 @@ def test_batch_prediction(
             # corrrupt subject embeddings depending on the datapoint index
             noise_lens = [(e_range[1] - e_range[0]) if e_range is not None else 0 for e_range in e_ranges] # tokenization could differ if subject starts sentence vs is in middle of sentence. find max len needed here, cut noise off as needed later
             max_noise_len = max(noise_lens)
-            print(e_ranges)
-            print('num ranges: ', len(e_ranges))
+            # print(e_ranges)
+            # print('num ranges: ', len(e_ranges))
             if layer == embed_layername:
                 embeds_noise = torch.from_numpy(prng.randn(x.shape[0], max_noise_len, x.shape[2])).to(x.device)
                 for i in range(len(e_ranges)):
@@ -144,10 +139,10 @@ def test_batch_prediction(
                     if e_range is not None:
                         b, e = e_range
                         noise_len = e-b
-                        print(f'about to add noise ({embeds_noise[i, :noise_len, :].shape}) to embeddings range {e_range}')
+                        # print(f'about to add noise ({embeds_noise[i, :noise_len, :].shape}) to embeddings range {e_range}')
                         x[i, b:e] += args.hparams.editing_noise * embeds_noise[i, :noise_len, :]
-                    print(f"datapoint {i}: {prefixes[i]}")
-                    print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i] if e_range is not None else None)
+                    # print(f"datapoint {i}: {prefixes[i]}")
+                    # print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i] if e_range is not None else None)
                 return x
             else:
                 return x
