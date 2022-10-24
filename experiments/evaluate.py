@@ -646,6 +646,6 @@ if __name__ == "__main__":
         print("\n final metrics: ")
         for metric in metrics:
             avg_val = np.mean(results_df.loc[:,metric])
-            print(f" {metric:%20s}: {avg_val:.3f}")
+            print(f" {metric:.20s}: {avg_val:.3f}")
 
 
