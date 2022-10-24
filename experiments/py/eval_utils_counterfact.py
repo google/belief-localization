@@ -93,17 +93,18 @@ def compute_rewrite_quality_counterfact(
             consistency_texts = []
             vec = None
         gen_stats = test_generation(
+            args,
             model,
             tok,
             generation_prompts,
             consistency_texts,
             essence_texts,
             vec,
+            subject,
         )
         ret.update(gen_stats)
 
     return ret
-
 
 def test_batch_prediction(
     args,
@@ -127,12 +128,14 @@ def test_batch_prediction(
         # define function that noises embeddings at tokens_to_mix indices
         def noise_embeddings(x, layer):
             # corrrupt subject embeddings depending on the datapoint index
-            noise_len = e_range[1] - e_range[0]
+            noise_len = e_ranges[0][1] - e_ranges[0][0] # rewrite prompts are first, so they will always include the subject, so safe to index here
             if layer == embed_layername:
                 embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
                 for i in range(len(e_ranges)):
-                    b, e = e_ranges[i]
-                    x[i, b:e] += args.hparams.editing_noise * embeds_noise[i]
+                    e_range = e_ranges[i]
+                    if e_range is not None:
+                        b, e = e_range
+                        x[i, b:e] += args.hparams.editing_noise * embeds_noise[i]
                 print(f"datapoint {i}: {prefixes[i]}")
                 print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i])
                 return x
@@ -174,12 +177,14 @@ def test_batch_prediction(
 
 
 def test_generation(
+    args,
     model,
     tok,
     prefixes: typing.List[str],
     consistency_texts: typing.List[str],
     essence_texts: typing.List[str],
     vec: TfidfVectorizer,
+    subject: str,
 ):
     return_dict = {}
     if len(consistency_texts) > 0:
@@ -200,12 +205,39 @@ def test_generation(
             return_dict['reference_score'] = consistency_tfidf
 
     if len(essence_texts) > 0:
-        ppls = []
-        for essence_text in essence_texts:
-            ppl = perplexity(model, tok, essence_text, max_input_length=100)
-            ppls.append(ppl)
-        avg_ppl = np.mean(ppls)
-        return_dict.update({"essence_score": avg_ppl, "essence_text": essence_texts})
+
+        # calculate the token indices for the subject for each ESSENCE TEXT
+        if args.use_noised_subject:
+            prng = np.random.RandomState(1) 
+            embed_layername = layername(model, 0, 'embed')
+            e_ranges = []
+            for essence_text in essence_texts:
+                e_range = find_token_range(tok, substring=subject, prompt_str=essence_text)
+                e_ranges.append(e_range)
+            # define function that noises embeddings at tokens_to_mix indices
+            def noise_embeddings(x, layer):
+                # corrrupt subject embeddings depending on the datapoint index
+                noise_len = e_ranges[0][1] - e_ranges[0][0]
+                if layer == embed_layername:
+                    embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
+                    for i in range(len(e_ranges)):
+                        e_range = e_ranges[i]
+                        if e_range is not None:
+                            b, e = e_range
+                            x[i, b:e] += args.hparams.editing_noise * embeds_noise[i]
+                    print(f"essence text {i}: {essence_texts[i]}")
+                    print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i])
+                    return x
+                else:
+                    return x
+
+        with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext():
+            ppls = []
+            for essence_text in essence_texts:
+                ppl = perplexity(model, tok, essence_text, max_input_length=100)
+                ppls.append(ppl)
+            avg_ppl = np.mean(ppls)
+            return_dict.update({"essence_score": avg_ppl, "essence_text": essence_texts})
 
     return return_dict
 
