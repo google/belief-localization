@@ -133,7 +133,7 @@ def test_batch_prediction(
         # define function that noises embeddings at tokens_to_mix indices
         def noise_embeddings(x, layer):
             # corrrupt subject embeddings depending on the datapoint index
-            noise_lens = [e_range[1] - e_range[0] for e_range in e_ranges] # tokenization could differ if subject starts sentence vs is in middle of sentence. find max len needed here, cut noise off as needed later
+            noise_lens = [(e_range[1] - e_range[0]) if e_range is not None else 0 for e_range in e_ranges] # tokenization could differ if subject starts sentence vs is in middle of sentence. find max len needed here, cut noise off as needed later
             max_noise_len = max(noise_lens)
             print(e_ranges)
             print('num ranges: ', len(e_ranges))
