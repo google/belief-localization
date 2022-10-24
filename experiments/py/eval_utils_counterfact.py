@@ -137,8 +137,6 @@ def test_batch_prediction(
             max_noise_len = max(noise_lens)
             print(e_ranges)
             print('num ranges: ', len(e_ranges))
-            print('x shape: ', x.shape)
-            print('noise_len: ', noise_len)
             if layer == embed_layername:
                 embeds_noise = torch.from_numpy(prng.randn(x.shape[0], max_noise_len, x.shape[2])).to(x.device)
                 for i in range(len(e_ranges)):
