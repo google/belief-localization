@@ -397,7 +397,12 @@ def main(
                         return x
             # get hidden representations from corrupted+uncorrupted forward passes to use as targets for weight editing
             if args.weight_based_tracing:
-                
+                gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
+                gen_batch['output_hidden_states'] = True
+                _, _, corrupted_hidden_states = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise, output_hidden_states=True)
+                uncorrupted_hidden_states = mt.model(**gen_batch)
+                import pdb; pdb.set_trace()
+                # splice uncorrupted hidden_states into corrupted_hidden_states where they are restored
                 pass
 
             # Compute weight changes + record weights that changed

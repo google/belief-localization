@@ -173,7 +173,7 @@ def corrupted_forward_pass(
             pred_prob = probs[noised_pred_id]
             outputs = (pred_prob, noised_pred_id,)
             if output_hidden_states:
-                outputs += (pure_noise_outputs.hidden_states)
+                outputs += (pure_noise_outputs.hidden_states,)
             return outputs
 
 

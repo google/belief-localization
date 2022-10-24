@@ -143,7 +143,7 @@ def test_batch_prediction(
                     e_range = e_ranges[i]
                     if e_range is not None:
                         b, e = e_range
-                        noise_len = b-e
+                        noise_len = e-b
                         print(f'about to add noise ({embeds_noise[i, :noise_len, :].shape}) to embeddings range {e_range}')
                         x[i, b:e] += args.hparams.editing_noise * embeds_noise[i, :noise_len, :]
                     print(f"datapoint {i}: {prefixes[i]}")
