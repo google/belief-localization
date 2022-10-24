@@ -6,6 +6,7 @@ appropriate arguments, which returns a dictionary containing them.
 
 import typing
 from itertools import chain
+from contextlib import nullcontext
 
 import nltk
 import numpy as np
@@ -15,11 +16,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from dsets import AttributeSnippets
+from experiments.causal_trace import layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs
+from util import nethook
 from util.generate import generate_fast
 from util.perplexity import perplexity
 
-
 def compute_rewrite_quality_counterfact(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     record: typing.Dict,
@@ -58,9 +61,10 @@ def compute_rewrite_quality_counterfact(
         neighborhood_prompts,
         attribute_prompts,
     ]
+    
     # Flatten all the evaluated prefixes into one list.
     probs = test_batch_prediction(
-        model, tok, list(chain(*prob_prompts)), target_new["str"], target_true["str"]
+        args, model, tok, list(chain(*prob_prompts)), target_new["str"], target_true["str"], subject
     )
     # Unflatten the results again into a list of lists.
     cutoffs = [0] + np.cumsum(list(map(len, prob_prompts))).tolist()
@@ -102,13 +106,38 @@ def compute_rewrite_quality_counterfact(
 
 
 def test_batch_prediction(
+    args,
     model,
     tok,
     prefixes: typing.List[str],
     target_new: str,
     target_true: str,
+    subject: str,
 ):
     """ """
+    
+    # calculate the token indices for the subject for each prompt. evaluation gets done in a batch, so need to noise at different token indices depending on the data point
+    if args.use_noised_subject:
+        prng = np.random.RandomState(1) 
+        embed_layername = layername(model, 0, 'embed')
+        e_ranges = []
+        for prompt in prefixes:
+            e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
+            e_ranges.append(e_range)
+        # define function that noises embeddings at tokens_to_mix indices
+        def noise_embeddings(x, layer):
+            # corrrupt subject embeddings depending on the datapoint index
+            noise_len = e_range[1] - e_range[0]
+            if layer == embed_layername:
+                embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
+                for i in range(len(e_ranges)):
+                    b, e = e_ranges[i]
+                    x[i, b:e] += args.hparams.editing_noise * embeds_noise[i]
+                print(f"datapoint {i}: {prefixes[i]}")
+                print(f" added noise to embeds at idx {e_ranges[i]}: ", embeds_noise[i])
+                return x
+            else:
+                return x
 
     prefix_lens = [len(n) for n in tok(prefixes)["input_ids"]]
     prompt_tok = tok(
@@ -124,7 +153,7 @@ def test_batch_prediction(
     a_tok, b_tok = (tok(f" {n}")["input_ids"] for n in [target_new, target_true])
     choice_a_len, choice_b_len = (len(n) for n in [a_tok, b_tok])
 
-    with torch.no_grad():
+    with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext():
         logits = model(**prompt_tok).logits
 
     results = np.zeros((logits.size(0),), dtype=np.float32)

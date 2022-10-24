@@ -279,6 +279,7 @@ def main(
     if alg_name == 'FT':
       params_path = params_path.replace('.json', '_constr.json')
     hparams = params_class.from_json(params_path)
+    args.hparams = hparams
     if override_hparams is not None:
       hparams.__dict__.update(override_hparams)
     print(f"Executing {alg_name} with parameters {hparams}")
@@ -418,17 +419,17 @@ def main(
 
             # Execute evaluation suite
             start = time.time()
-            with torch.no_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
+            with torch.no_grad(): #, nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
                 metrics = {
                     "case_id": case_id,
                     "requested_rewrite": record["requested_rewrite"],
                     "time": exec_time,
-                    "post": ds_eval_method(edited_model, tok, record, snips, vec, skip_generation_tests),
+                    "post": ds_eval_method(args, edited_model, tok, record, snips, vec, skip_generation_tests),
                 }
 
                 for k, v in weights_copy.items():
                     nethook.get_parameter(model, k)[...] = v.to("cuda")
-                metrics["pre"] = ds_eval_method(model, tok, record, snips, vec, skip_generation_tests)
+                metrics["pre"] = ds_eval_method(args, model, tok, record, snips, vec, skip_generation_tests)
 
             # print("metrics: ", metrics)
             print("Evaluation took", time.time() - start)
@@ -643,7 +644,7 @@ if __name__ == "__main__":
     print(results_df.loc[:,['case_id', 'subject', 'target', 'request', 'post_rewrite_success', 'post_neighborhood_success', 'post_paraphrase_success', 'post_score', 'essence_ppl_diff']])
     metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score']
     if len(window_sizes) == 1 and len(central_layers) == 1:
-        print("\n final metrics: ")
+        print("\nfinal metrics: ")
         for metric in metrics:
             avg_val = np.mean(results_df.loc[:,metric])
             print(f" {metric:.20s}: {avg_val:.3f}")

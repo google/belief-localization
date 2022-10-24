@@ -16,6 +16,7 @@ from dsets import AttributeSnippets
 
 
 def compute_rewrite_quality_zsre(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     record: typing.Dict,
