@@ -5,7 +5,7 @@ import torch
 import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from experiments.causal_trace import find_token_range
+from experiments.causal_trace import find_token_range, simple_make_inputs, corrupted_forward_pass
 from util import nethook
 
 from .ft_hparams import FTHyperParams
@@ -27,7 +27,7 @@ def apply_ft_to_model(
         Note that you are responsible for deallocating the new model's memory to avoid leaks.
     :return: (1) the updated model, (2) the weights that changed
     """
-
+    assert len(requests) == 1
     weights_copy = {}
     if copy:
         model = deepcopy(model)
@@ -43,7 +43,28 @@ def apply_ft_to_model(
     num_noise_samples = kwargs.pop('num_noise_samples', None)
     prior_prob = kwargs.pop('prior_prob', None)
 
-    deltas = execute_ft(args, model, tok, requests, hparams, embedding_token_idx=embeds_subj_idx, repeat_input=num_noise_samples, prior_prob=prior_prob)
+    # get hidden representations from corrupted+uncorrupted forward passes to use as targets for weight editing
+    if args.weight_based_tracing:
+        prompt = requests[0]['full_prompt']
+        subject = requests[0]['subject']
+        e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
+        last_subj_idx = e_range[1]
+        gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
+        gen_batch['output_hidden_states'] = True
+        import pdb; pdb.set_trace()
+        _, _, corrupted_hidden_states = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise, output_hidden_states=True)
+        uncorrupted_hidden_states = mt.model(**gen_batch)
+        # splice uncorrupted hidden_states into corrupted_hidden_states where they are restored
+        hidden_state_supervision = corrupted_hidden_states
+        hidden_state_supervision[:,last_subj_idx,:] = uncorrupted_hidden_states[:,last_subj_idx,:]
+    else:
+        hidden_state_supervision = None
+
+    deltas = execute_ft(args, model, tok, requests, hparams, 
+                        embedding_token_idx=embeds_subj_idx, 
+                        repeat_input=num_noise_samples, 
+                        prior_prob=prior_prob,
+                        hidden_state_supervision=hidden_state_supervision)
 
     with torch.no_grad():
         for w_name, upd_matrix in deltas.items():
@@ -72,6 +93,7 @@ def execute_ft(
     embedding_token_idx = None,
     repeat_input = 1,
     prior_prob = 0,
+    hidden_state_supervision = None,
     **kwargs: Any,
 ) -> Dict[str, Tuple[torch.Tensor]]:
     """

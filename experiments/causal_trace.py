@@ -760,7 +760,6 @@ def predict_from_input(model, inp):
     p, preds = torch.max(probs, dim=1)
     return preds, p
 
-
 def collect_embedding_std(mt, subjects):
     alldata = []
     for s in subjects:

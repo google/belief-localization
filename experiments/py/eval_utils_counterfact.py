@@ -45,8 +45,8 @@ def compute_rewrite_quality_counterfact(
     """
 
     # First, unpack rewrite evaluation record.
-    subject, target_new, target_true = (
-        record["requested_rewrite"][x] for x in ["subject", "target_new", "target_true"]
+    subject, target_new, request_baseline = (
+        record["requested_rewrite"][x] for x in ["subject", "target_new", "request_baseline"]
     )
     rewrite_prompts = [record["requested_rewrite"]["prompt"].format(subject)]
     paraphrase_prompts = record["paraphrase_prompts"]
@@ -64,7 +64,7 @@ def compute_rewrite_quality_counterfact(
     
     # Flatten all the evaluated prefixes into one list.
     probs = test_batch_prediction(
-        args, model, tok, list(chain(*prob_prompts)), target_new["str"], target_true["str"], subject
+        args, model, tok, list(chain(*prob_prompts)), target_new["str"], request_baseline, subject
     )
     # Unflatten the results again into a list of lists.
     cutoffs = [0] + np.cumsum(list(map(len, prob_prompts))).tolist()
@@ -112,13 +112,13 @@ def test_batch_prediction(
     tok,
     prefixes: typing.List[str],
     target_new: str,
-    target_true: str,
+    request_baseline: str,
     subject: str,
 ):
     """ """
     
     # calculate the token indices for the subject for each prompt. evaluation gets done in a batch, so need to noise at different token indices depending on the data point
-    if args.use_noised_subject:
+    if args.fact_forcing:
         prng = np.random.RandomState(1) 
         embed_layername = layername(model, 0, 'embed')
         e_ranges = []
@@ -152,16 +152,16 @@ def test_batch_prediction(
         [
             f"{prefix} {suffix}"
             for prefix in prefixes
-            for suffix in [target_new, target_true]
+            for suffix in [target_new, request_baseline]
         ],
         padding=True,
         return_tensors="pt",
     ).to("cuda")
 
-    a_tok, b_tok = (tok(f" {n}")["input_ids"] for n in [target_new, target_true])
+    a_tok, b_tok = (tok(f" {n}")["input_ids"] for n in [target_new, request_baseline])
     choice_a_len, choice_b_len = (len(n) for n in [a_tok, b_tok])
 
-    with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext():
+    with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing or args.weight_based_tracing else nullcontext():
         logits = model(**prompt_tok).logits
 
     results = np.zeros((logits.size(0),), dtype=np.float32)
@@ -176,7 +176,7 @@ def test_batch_prediction(
         results[i] /= cur_len
 
     return [
-        {"target_new": results[i].item(), "target_true": results[i + 1].item()}
+        {"target_new": results[i].item(), "request_baseline": results[i + 1].item()}
         for i in range(0, len(results), 2)
     ]
 
@@ -212,7 +212,7 @@ def test_generation(
     if len(essence_texts) > 0:
 
         # calculate the token indices for the subject for each ESSENCE TEXT
-        if args.use_noised_subject:
+        if args.fact_forcing or args.weight_based_tracing:
             ppls = []
             for essence_text in essence_texts:
                 e_range = find_token_range(tok, substring=subject, prompt_str=essence_text)
@@ -231,7 +231,7 @@ def test_generation(
                         return x
                     else:
                         return x
-                with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext():
+                with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing or args.weight_based_tracing else nullcontext():
                     ppl = perplexity(model, tok, essence_text, max_input_length=100)
                 ppls.append(ppl)
             avg_ppl = np.mean(ppls)

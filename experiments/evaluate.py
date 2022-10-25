@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import shutil
@@ -25,7 +26,7 @@ from dsets import (
     MENDQADataset,
     get_tfidf_vectorizer,
 )
-from experiments.causal_trace import ModelAndTokenizer, score_from_batch
+from experiments.causal_trace import ModelAndTokenizer, score_from_batch, predict_token
 from experiments.causal_trace import layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
@@ -94,7 +95,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     if alg_name == "FT":
       return_dict['norm_constraint'] = 2e-4
   # increase number of steps if noising the subject
-  if args.use_noised_subject:
+  if args.fact_forcing:
     if alg_name == "FT":
         return_dict['num_steps'] = 50
     if alg_name == "ROME":
@@ -110,20 +111,22 @@ def sweep_experiment_name(args, model_name, alg_name, ds_name, sweep_params):
     if _v == "-2":
         _v = "all"
     exp_name += f"_{k[:5]}-{_v}"
-  if args.use_noised_target:
-    obj = '_noise-target'
-  elif args.use_noised_subject:
-    obj = '_noise-subject'
-  else:
-    obj = ''
+  if args.tracing_reversal:
+    obj = '_trace-reverse'
+  elif args.fact_forcing:
+    obj = '_fact-forcing'
+  elif args.fact_erasure:
+    obj = '_fact-erasure'
+  elif args.weight_based_tracing:
+    obj = '_weight-tracing'
   return f'{exp_name}{obj}_n{args.dataset_size_limit}.csv'
 
 def ROME_experiment_name(args, model_name, alg_name, ds_name, hparams_to_add):
   exp_name = f'{model_name}/{alg_name}_outputs_{ds_name}'
-  if args.use_noised_target:
-    hparams_to_add['ntarget'] = 'T'
-  if args.use_noised_subject:
-    hparams_to_add['nsubject'] = 'T'
+  if args.tracing_reversal:
+    hparams_to_add['trace-reverse'] = 'T'
+  if args.fact_forcing:
+    hparams_to_add['fact-forcing'] = 'T'
   for k,v in hparams_to_add.items():
     _v = str(v).replace(", ", "-")
     if _v == "-1":
@@ -167,6 +170,7 @@ def make_editing_results_df(exp_name, n=1000):
         'target': [target],
         'subject' : [rewrite_data['subject']],
         'request' : [rewrite_data['target_new']['str']],
+        'request_baseline': [rewrite_data['request_baseline']]
     }
     cur_sum = collections.defaultdict(lambda: [])
     data = record
@@ -184,7 +188,7 @@ def make_editing_results_df(exp_name, n=1000):
             cur_sum[sum_key_discrete].append(
                 np.mean(
                     [
-                        x["target_true"] > x["target_new"]
+                        x["request_baseline"] > x["target_new"]
                         for x in data[prefix][key]
                     ]
                 )
@@ -192,7 +196,7 @@ def make_editing_results_df(exp_name, n=1000):
             cur_sum[sum_key_cont].append(
                 np.mean(
                     [
-                        np.exp(-x["target_new"]) - np.exp(-x["target_true"])
+                        np.exp(-x["target_new"]) - np.exp(-x["request_baseline"])
                         for x in data[prefix][key]
                     ]
                 )
@@ -205,7 +209,7 @@ def make_editing_results_df(exp_name, n=1000):
             cur_sum[sum_key_discrete].append(
                 np.mean(
                     [
-                        x["target_true"] < x["target_new"]
+                        x["request_baseline"] < x["target_new"]
                         for x in data[prefix][key]
                     ]
                 )
@@ -213,7 +217,7 @@ def make_editing_results_df(exp_name, n=1000):
             cur_sum[sum_key_cont].append(
                 np.mean(
                     [
-                        np.exp(-x["target_true"]) - np.exp(-x["target_new"])
+                        np.exp(-x["request_baseline"]) - np.exp(-x["target_new"])
                         for x in data[prefix][key]
                     ]
                 )
@@ -328,6 +332,7 @@ def main(
             request = record["requested_rewrite"]
             subject = record["requested_rewrite"]['subject']
             prompt = request['prompt'].format(subject)
+            request['full_prompt'] = prompt
             target_true = request['target_true']['str']
             paraphrase_prompts = record["paraphrase_prompts"]
             neighborhood_prompts = record["neighborhood_prompts"]
@@ -343,6 +348,7 @@ def main(
                 # second condition here checks that subject appears verbatim in first 200 characters of essence text, which is necessary later on
                 # essence_texts = snips.names_to_samples[subject]
                 # if subject == 'Inner Circle railway line':
+                    # print("debug the condition below for Inner Circle railway line")
                     # import pdb; pdb.set_trace()
                 # if len(essence_texts) == 0 or not all([subject in essence_text[:200] for essence_text in essence_texts]):
                 if verbose:
@@ -361,33 +367,43 @@ def main(
                 if verbose:
                     for text in snips.names_to_samples[request['subject']][:2]:
                         print(f" Essence text: {text[:200]}")
-            
-            # objective-specific things. 
-            # get the noised output prediction if we are editing to change prediction to noise output rather than original output
+
+            # adjust targets and define 'request_baseline' based on objectives. note model does not necesarily predict 'request_baseline' value before rewriting
             num_noise_samples = 10
             e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
-            if args.use_noised_target:
+            prior_prob = None
+            if args.tracing_reversal:
                 gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
                 _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise)
-                target_noised_output = tok.decode([noised_pred_id])
-                request['target_old'] = request['target_new']
-                request['target_new']['str'] = target_noised_output
+                noised_pred_token = tok.decode([noised_pred_id])
+                request['request_baseline'] = request['target_true']['str']
+                request['target_new']['str'] = noised_pred_token
                 request['target_new']['id'] = 'noised-input'
                 if verbose:
-                    score_batch = make_inputs(tok, [prompt], targets=[target_noised_output])
+                    score_batch = make_inputs(tok, [prompt], targets=[noised_pred_token])
                     init_target_prob = score_from_batch(model, score_batch)
-                    print(f" NEW TARGET PREDICTION: \"{target_noised_output}\" with init pred prob: {init_target_prob.item():.4f}")
-            # compute p(o|s-noise, r)
-            if args.target_is_prior:
+                    print(f" NEW TARGET PREDICTION: \"{noised_pred_token}\" with init pred prob: {init_target_prob.item():.4f}")
+            elif args.fact_erasure:
                 batch = make_inputs(mt.tokenizer, prompts=[prompt] * num_noise_samples, targets=[target_true] * num_noise_samples)
                 prior_prob = corrupted_forward_pass(mt.model, batch, None, tokens_to_mix=e_range, noise=hparams.editing_noise)
+                if verbose:
+                    print(f" TARGET/PRIOR PROB: {prior_prob.item():.4f}")
+                request['request_baseline'] = mt.tokenizer.eos_token_id
+            elif args.fact_forcing or args.weight_based_tracing:
+                gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
+                _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise)
+                noised_pred_token = tok.decode([noised_pred_id])
+                request['request_baseline'] = noised_pred_token
+                request['target_new'] = request['target_true']
             else:
-                prior_prob = None
+                request['request_baseline'] = request['target_true']['str']
+                
+            # get additional functions and variables based on objectives
             # make noise_embeddings function for nethook contextmanager if noising the subject
-            if args.use_noised_subject:
+            if args.fact_forcing or args.weight_based_tracing:
+                # define noise embeddings function
                 prng = np.random.RandomState(1) 
                 embed_layername = layername(model, 0, 'embed')
-                e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
                 # define function that noises embeddings at tokens_to_mix indices
                 def noise_embeddings(x, layer):
                     # skip noising if seq is a single token (must be bos/eos for open-ended generation)
@@ -403,15 +419,6 @@ def main(
                         return x
                     else:
                         return x
-            # get hidden representations from corrupted+uncorrupted forward passes to use as targets for weight editing
-            if args.weight_based_tracing:
-                gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
-                gen_batch['output_hidden_states'] = True
-                import pdb; pdb.set_trace()
-                _, _, corrupted_hidden_states = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise, output_hidden_states=True)
-                uncorrupted_hidden_states = mt.model(**gen_batch)
-                # splice uncorrupted hidden_states into corrupted_hidden_states where they are restored
-                pass
 
             # Compute weight changes + record weights that changed
             start = time.time()
@@ -420,10 +427,7 @@ def main(
                 if conserve_memory
                 else dict()
             )
-            with torch.enable_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
-              request = record["requested_rewrite"]
-              paraphrase_prompts = record["paraphrase_prompts"]
-              neighborhood_prompts = record["neighborhood_prompts"]
+            with torch.enable_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing else nullcontext() as td:
               edited_model, weights_copy = apply_algo(
                   args,
                   model,
@@ -441,10 +445,10 @@ def main(
 
             # Execute evaluation suite
             start = time.time()
-            with torch.no_grad(): #, nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.use_noised_subject else nullcontext() as td:
+            with torch.no_grad(): #, nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing else nullcontext() as td:
                 metrics = {
                     "case_id": case_id,
-                    "requested_rewrite": record["requested_rewrite"],
+                    "requested_rewrite": request,
                     "time": exec_time,
                     "post": ds_eval_method(args, edited_model, tok, record, snips, vec, skip_generation_tests),
                 }
@@ -466,8 +470,6 @@ def main(
               pass
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--alg_name",
@@ -539,17 +541,17 @@ if __name__ == "__main__":
         "Useful for quick debugging and hyperparameter sweeps.",
     )
     parser.add_argument(
-        "--use_noised_target",
+        "--tracing_reversal",
         action="store_true",
         help="Rather than changing output from target_true to target_new, change it to the prediction obtained from the noised causal tracing input",
     )
     parser.add_argument(
-        "--use_noised_subject",
+        "--fact_forcing",
         action="store_true",
         help="Rather than change o-true to o-new for (s,r,.) input, change o-noise to o-true for (s-noise, r,.) input",
     )
     parser.add_argument(
-        "--target_is_prior",
+        "--fact_erasure",
         action="store_true",
         help="See paper for description",
     )
@@ -572,7 +574,7 @@ if __name__ == "__main__":
         choices=[0,1],
     )
     parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=True, verbose=False, overwrite=False,
-                        use_noised_target=False, use_noised_subject=False)
+                        tracing_reversal=False, fact_forcing=False)
     args = parser.parse_args()
 
     # load model
@@ -621,7 +623,7 @@ if __name__ == "__main__":
     if '6B' in model_name:
         central_layers = list(range(0, 28, 4)) + [5, 27]
         num_layers = 28
-    if alg_name == 'FT' and 1 in window_sizes and not args.use_noised_subject:
+    if alg_name == 'FT' and 1 in window_sizes and not args.fact_forcing:
         central_layers = [-1] + central_layers
     if args.edit_layer > -2:
         central_layers = [args.edit_layer]
