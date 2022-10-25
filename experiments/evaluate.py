@@ -342,6 +342,8 @@ def main(
                 essence_prompt = "{} is a".format(subject)
                 # second condition here checks that subject appears verbatim in first 200 characters of essence text, which is necessary later on
                 essence_texts = snips.names_to_samples[subject]
+                if subject == 'Inner Circle railway line':
+                    import pdb; pdb.set_trace()
                 if len(essence_texts) == 0 or not all([subject in essence_text[:200] for essence_text in essence_texts]):
                     if verbose:
                         print("GENERATING ESSENCE TEXTS")

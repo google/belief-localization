@@ -218,21 +218,16 @@ def test_generation(
                 e_range = find_token_range(tok, substring=subject, prompt_str=essence_text)
                 prng = np.random.RandomState(1) 
                 embed_layername = layername(model, 0, 'embed')
-                if e_range[0] > 1000:
-                    import pdb; pdb.set_trace()
                 # define function that noises embeddings at tokens_to_mix indices
                 def noise_embeddings(x, layer):
                     # corrrupt subject embeddings depending on the datapoint index
                     noise_len = e_range[1] - e_range[0]
                     if layer == embed_layername:
                         embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
-                        print(f'about to add noise ({embeds_noise.shape}) to embeddings range {e_range}')
+                        # print(f'about to add noise ({embeds_noise.shape}) to embeddings range {e_range}')
                         if e_range is not None:
                             b, e = e_range
-                            try:
-                                x[:, b:e] += args.hparams.editing_noise * embeds_noise
-                            except:
-                                import pdb; pdb.set_trace()
+                            x[:, b:e] += args.hparams.editing_noise * embeds_noise
                         return x
                     else:
                         return x
