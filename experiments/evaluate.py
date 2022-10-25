@@ -388,7 +388,8 @@ def main(
                 prior_prob = corrupted_forward_pass(mt.model, batch, None, tokens_to_mix=e_range, noise=hparams.editing_noise)
                 if verbose:
                     print(f" TARGET/PRIOR PROB: {prior_prob.item():.4f}")
-                request['request_baseline'] = mt.tokenizer.eos_token_id
+                request['request_baseline'] = mt.tokenizer.eos_token_id # arbitrary token, won't use these metrics anyway
+                request['target_new'] = request['target_true']
             elif args.fact_forcing or args.weight_based_tracing:
                 gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
                 _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise)
@@ -397,6 +398,8 @@ def main(
                 request['target_new'] = request['target_true']
             else:
                 request['request_baseline'] = request['target_true']['str']
+            if verbose:
+                print(" request baseline: ", request['request_baseline'])
                 
             # get additional functions and variables based on objectives
             # make noise_embeddings function for nethook contextmanager if noising the subject

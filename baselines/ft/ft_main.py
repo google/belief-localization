@@ -131,11 +131,8 @@ def execute_ft(
 
     # Define inputs
     texts = [r["prompt"].format(r["subject"]) for r in requests]
-    if not args.target_is_prior:
-        targets = [r["target_new"]["str"] for r in requests]
-    else:
-        targets = [r["target_true"]["str"] for r in requests]
-
+    targets = [r["target_new"]["str"] for r in requests]
+    
     # Configure optimizer / gradients
     opt = torch.optim.Adam(
         [v for _, v in weights.items()],
