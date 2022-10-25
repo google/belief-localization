@@ -341,22 +341,23 @@ def main(
             if do_essence_tests or not skip_generation_tests:
                 essence_prompt = "{} is a".format(subject)
                 # second condition here checks that subject appears verbatim in first 200 characters of essence text, which is necessary later on
-                essence_texts = snips.names_to_samples[subject]
-                if subject == 'Inner Circle railway line':
-                    import pdb; pdb.set_trace()
-                if len(essence_texts) == 0 or not all([subject in essence_text[:200] for essence_text in essence_texts]):
-                    if verbose:
-                        print("GENERATING ESSENCE TEXTS")
-                    essence_texts = generate_fast(
-                        model,
-                        tok,
-                        [essence_prompt],
-                        n_gen_per_prompt=5,
-                        max_out_len=100,
-                    )
-                    snips.names_to_samples[subject].extend(essence_texts)
-                elif verbose:
-                    print("using wikipedia essence texts")
+                # essence_texts = snips.names_to_samples[subject]
+                # if subject == 'Inner Circle railway line':
+                    # import pdb; pdb.set_trace()
+                # if len(essence_texts) == 0 or not all([subject in essence_text[:200] for essence_text in essence_texts]):
+                if verbose:
+                    print("GENERATING ESSENCE TEXTS")
+                essence_texts = generate_fast(
+                    model,
+                    tok,
+                    [essence_prompt],
+                    n_gen_per_prompt=5,
+                    max_out_len=100,
+                )
+                snips.names_to_samples[subject] = essence_texts
+                # snips.names_to_samples[subject].extend(essence_texts)
+                # elif verbose:
+                    # print("using wikipedia essence texts")
                 if verbose:
                     for text in snips.names_to_samples[request['subject']][:2]:
                         print(f" Essence text: {text[:200]}")
