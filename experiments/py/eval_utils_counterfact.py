@@ -224,9 +224,13 @@ def test_generation(
                     noise_len = e_range[1] - e_range[0]
                     if layer == embed_layername:
                         embeds_noise = torch.from_numpy(prng.randn(x.shape[0], noise_len, x.shape[2])).to(x.device)
+                        print(f'about to add noise ({embeds_noise.shape}) to embeddings range {e_range}')
                         if e_range is not None:
                             b, e = e_range
-                            x[:, b:e] += args.hparams.editing_noise * embeds_noise
+                            try:
+                                x[:, b:e] += args.hparams.editing_noise * embeds_noise
+                            except:
+                                import pdb; pdb.set_trace()
                         return x
                     else:
                         return x
