@@ -131,7 +131,7 @@ def execute_ft(
 
     # Define inputs
     texts = [r["prompt"].format(r["subject"]) for r in requests]
-    targets = [r["target_new"]["str"] for r in requests]
+    targets = [r["target_new"]["str"] for r in requests] # if args.fact_erasure, these are set as target_true
     
     # Configure optimizer / gradients
     opt = torch.optim.Adam(
@@ -170,7 +170,7 @@ def execute_ft(
                 loss = -(torch.gather(probs, 1, target_ids) * loss_mask).sum(
                     1
                 ) / loss_mask.sum(1)
-            if args.target_is_prior:
+            if args.fact_erasure:
                 pred_prob = -torch.exp(loss)
                 loss = torch.abs(pred_prob - prior_prob) 
             if args.weight_based_tracing:
