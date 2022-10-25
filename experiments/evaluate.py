@@ -340,7 +340,9 @@ def main(
             # generate essence_texts for evaluation if needed
             if do_essence_tests or not skip_generation_tests:
                 essence_prompt = "{} is a".format(subject)
-                if len(snips.names_to_samples[subject]) == 0:
+                # second condition here checks that subject appears verbatim in first 200 characters of essence text, which is necessary later on
+                essence_texts = snips.names_to_samples[subject]
+                if len(essence_texts) == 0 or not all([subject in essence_text[:200] for essence_text in essence_texts]):
                     if verbose:
                         print("GENERATING ESSENCE TEXTS")
                     essence_texts = generate_fast(
