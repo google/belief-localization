@@ -123,7 +123,7 @@ def execute_ft(
     # Configure optimizer / gradients
     opt = torch.optim.Adam(
         [v for _, v in weights.items()],
-        lr=hparams.lr,
+        lr=.1, #hparams.lr,
         weight_decay=hparams.weight_decay,
     )
     for name, w in model.named_parameters():
@@ -173,6 +173,8 @@ def execute_ft(
                     print("tok embed: ", outputs.hidden_states[0][0,last_subj_ind,1])
                     print("model output: ", hidden_states[0,0,last_subj_ind,1])
                     print("supervision: ", hidden_state_supervision[0,0,last_subj_ind,1])
+                    print("grad: ", model.transformers.h[0].mlp.fc_out.weight.grad[1])
+                    print("weight: ", model.transformers.h[0].mlp.fc_out.weight[1])
                     import pdb; pdb.set_trace()
                 
             loss = loss.mean()
