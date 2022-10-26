@@ -355,7 +355,7 @@ def main(
                 import pdb; pdb.set_trace()
                 eval_this_point = 0
                 if correctness_check:
-                    gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
+                    gen_batch = simple_make_inputs(tok, prompts=[prompt])
                     samples, scores, _ = predict_model(mt, 
                                             [prompt], 
                                             answers=None, 
@@ -717,7 +717,10 @@ if __name__ == "__main__":
     if len(window_sizes) == 1 and len(central_layers) == 1:
         print("\nfinal metrics: ")
         for metric in metrics:
-            avg_val = np.mean(results_df.loc[:,metric])
-            print(f" {metric:.20s}: {avg_val:.3f}")
+            if metric in results_df.columns:
+                avg_val = np.mean(results_df.loc[:,metric])
+                print(f" {metric:.20s}: {avg_val:.3f}")
+            else:
+                print(f" missing {metric}")
 
 
