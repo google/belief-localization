@@ -213,9 +213,10 @@ def test_generation(
     if len(essence_texts) > 0:
 
         # calculate the token indices for the subject for each ESSENCE TEXT
-        if args.fact_forcing or args.weight_based_tracing:
-            ppls = []
-            for essence_text in essence_texts:
+        ppls = []
+        for essence_text in essence_texts:
+            # define subject noising function
+            if args.fact_forcing or args.weight_based_tracing:
                 e_range = find_token_range(tok, substring=subject, prompt_str=essence_text)
                 prng = np.random.RandomState(1) 
                 embed_layername = layername(model, 0, 'embed')
@@ -232,11 +233,11 @@ def test_generation(
                         return x
                     else:
                         return x
-                with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing or args.weight_based_tracing else nullcontext():
-                    ppl = perplexity(model, tok, essence_text, max_input_length=100)
-                ppls.append(ppl)
-            avg_ppl = np.mean(ppls)
-            return_dict.update({"essence_score": avg_ppl, "essence_text": essence_texts})
+            with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing or args.weight_based_tracing else nullcontext():
+                ppl = perplexity(model, tok, essence_text, max_input_length=100)
+            ppls.append(ppl)
+        avg_ppl = np.mean(ppls)
+        return_dict.update({"essence_score": avg_ppl, "essence_text": essence_texts})
 
     return return_dict
 

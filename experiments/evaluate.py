@@ -32,6 +32,7 @@ from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counte
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from rome import ROMEHyperParams, apply_rome_to_model
 from util import nethook
+from util.fewshot_utils import predict_model, fewshot_accuracy_sum
 from util.generate import generate_fast
 from util.globals import *
 
@@ -277,6 +278,8 @@ def main(
     verbose=False,
     override_hparams=None,
     overwrite=False,
+    correctness_check=False,
+    target_prob_check=0,
 ):
     # Set algorithm-specific variables
     params_class, apply_algo = ALG_DICT[alg_name]
@@ -343,8 +346,33 @@ def main(
             if verbose:
                 print("Updating point:"
                     f" orig update: [{prompt}] -> [{request['target_new']['str']}]"
+                    f"\n True label: {target_true}"
                     f"\n Paraphrases: {paraphrase_prompts[:2]}"
                     f"\n Neighbors: {neighborhood_prompts[:2]}")
+
+            # check if we should skip based on correctness or probability checks
+            if correctness_check or target_prob_check > 0:
+                import pdb; pdb.set_trace()
+                eval_this_point = 0
+                if correctness_check:
+                    gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
+                    samples, scores, _ = predict_model(mt, 
+                                            [prompt], 
+                                            answers=None, 
+                                            trigger_phrase=None, 
+                                            max_decode_steps=48)
+                    is_correct = fewshot_accuracy_sum(samples, [target_true])
+                    eval_this_point += is_correct
+                if target_prob_check > 0:
+                    preds, scores, _ = predict_model(mt, [prompt], answers=[target_true])
+                    meets_target_prob = scores[0].item() > target_prob_check
+                    eval_this_point += meets_target_prob
+                if not eval_this_point > 0:
+                    if verbose:
+                        print(" Skipping this point due to it being incorrect and not meeting the minimum target prob.")
+                        if target_prob_check > 0: print(f" Target prob: {scores}")
+                        if correctness_check:     print(f" Pred: {preds}")
+                    continue
 
             # generate essence_texts for evaluation if needed
             if do_essence_tests or not skip_generation_tests:
@@ -657,6 +685,8 @@ if __name__ == "__main__":
                     override_hparams=override_hparams,
                     verbose=args.verbose,
                     overwrite=args.overwrite,
+                    correctness_check=True,
+                    target_prob_check=.1
                 )
             # accumulate results
             exp_name = ROME_experiment_name_from_override_params(args, model_name, alg_name, ds_name, override_hparams, hparams_class)

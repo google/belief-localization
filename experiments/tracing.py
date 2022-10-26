@@ -27,7 +27,7 @@ from dsets import (
     KnownsDataset,
     get_tfidf_vectorizer,
 )
-from experiments.causal_trace import ModelAndTokenizer, score_from_batch
+from experiments.causal_trace import ModelAndTokenizer, score_from_batch, get get_high_and_low_scores
 from experiments.causal_trace import layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs, predict_model
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
