@@ -173,8 +173,8 @@ def execute_ft(
                     print("tok embed: ", outputs.hidden_states[0][0,last_subj_ind,1])
                     print("model output: ", hidden_states[0,0,last_subj_ind,1])
                     print("supervision: ", hidden_state_supervision[0,0,last_subj_ind,1])
-                    print("grad: ", model.transformers.h[0].mlp.fc_out.weight.grad[1])
-                    print("weight: ", model.transformers.h[0].mlp.fc_out.weight[1])
+                    print("grad: ", model.transformer.h[0].mlp.fc_out.weight.grad[1])
+                    print("weight: ", model.transformer.h[0].mlp.fc_out.weight[1])
                     import pdb; pdb.set_trace()
                 
             loss = loss.mean()
