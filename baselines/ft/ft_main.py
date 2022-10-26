@@ -168,12 +168,10 @@ def execute_ft(
 
             # compute loss based on objective
             if not args.weight_based_tracing:
-                probs = torch.nn.functional.log_softmax(last_token_logits, dim=-1)
-                loss = -(torch.gather(probs, 1, target_ids) * loss_mask).sum(
-                    1
-                ) / loss_mask.sum(1)
+                logprobs = torch.nn.functional.log_softmax(last_token_logits, dim=-1)
+                loss = -(torch.gather(logprobs, 1, target_ids) * loss_mask).sum(1) / loss_mask.sum(1)
             if args.fact_erasure:
-                pred_prob = -torch.exp(loss)
+                pred_prob = torch.exp(-loss)
                 loss = torch.abs(pred_prob - prior_prob) 
             if args.weight_based_tracing:
                 hidden_states = outputs.hidden_states
