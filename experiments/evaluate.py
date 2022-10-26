@@ -406,6 +406,7 @@ def main(
             # adjust targets and define 'request_baseline' based on objectives. note model does not necesarily predict 'request_baseline' value before rewriting
             num_noise_samples = 10
             e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
+            request['e_range'] = e_range
             prior_prob = None
             if args.tracing_reversal:
                 gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
@@ -735,7 +736,7 @@ if __name__ == "__main__":
     blob.upload_from_filename(save_path)
 
     print(f"saving csv at {save_path}...")
-    metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score']
+    metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
     if len(window_sizes) == 1 and len(central_layers) == 1:
         print("\nfinal metrics: ")
         for metric in metrics:

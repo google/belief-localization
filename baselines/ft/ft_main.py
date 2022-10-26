@@ -98,6 +98,7 @@ def execute_ft(
         )
         if args.fact_erasure:
             print(f"prior prob is: {prior_prob:.4f}")
+        e_range = request_['e_range']
 
     # Retrieve weights that user desires to change
     weights = {
@@ -158,7 +159,6 @@ def execute_ft(
                 pred_prob = torch.exp(-loss)
                 loss = torch.abs(pred_prob - prior_prob) 
             if args.weight_based_tracing:
-                import pdb; pdb.set_trace()
                 hidden_states = outputs.hidden_states
                 hidden_states = torch.stack([hidden_states[layer+1] for layer in hparams.layers], dim=0)
                 loss_mat = (hidden_states - hidden_state_supervision)**2
@@ -190,7 +190,8 @@ def execute_ft(
         if args.fact_erasure:
             print_addendum = f"(pred prob: {pred_prob[0].item():.4f})"
         if args.weight_based_tracing:
-            print_addendum = ' '.join([f" {tok_idx}: {per_tok_loss}" for tok_idx, tok_loss in enumerate(per_tok_loss)])
+            # * indicates is subject token            
+            print_addendum = ' '.join([f" {tok_idx}:{'*' if tok_idx in range(*e_range) else ""} {per_tok_loss:.5f}" for tok_idx, tok_loss in enumerate(per_tok_loss.tolist())])
         print(f"Total loss at epoch {it}: {loss_meter.avg:.4f} | ", print_addendum)
 
         if loss_meter.avg < 1e-2:
