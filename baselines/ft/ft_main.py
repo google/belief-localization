@@ -180,8 +180,10 @@ def execute_ft(
                 pred_prob = torch.exp(-loss)
                 loss = torch.abs(pred_prob - prior_prob) 
             if args.weight_based_tracing:
+                import pdb; pdb.set_trace()
                 hidden_states = outputs.hidden_states
-                pass
+                hidden_states = torch.stack([hidden_states[layer] for layer in hparams.layers], dim=0)
+                loss = ((hidden_states - hidden_state_supervision)**2).sum()
                 
             loss = loss.mean()
             loss_meter.update(loss.item(), n=bs)
