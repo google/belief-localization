@@ -51,12 +51,18 @@ def apply_ft_to_model(
         last_subj_idx = e_range[1]
         gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
         gen_batch['output_hidden_states'] = True
-        import pdb; pdb.set_trace()
-        _, _, corrupted_hidden_states = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise, output_hidden_states=True)
-        uncorrupted_hidden_states = mt.model(**gen_batch)
+        _, _, corrupted_hidden_states = corrupted_forward_pass(model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise, output_hidden_states=True)
+        # corrupted_hidden_states of shape [n_layers, num_noisy_samples, seq_len, hidden_dim]
+        corrupted_hidden_states = torch.stack([corrupted_hidden_states[layer] for layer in hparams.layers], dim=0)
+        clean_hidden_states = model(**gen_batch).hidden_states
+        clean_hidden_states = torch.stack([clean_hidden_states[layer] for layer in hparams.layers], dim=0)
         # splice uncorrupted hidden_states into corrupted_hidden_states where they are restored
         hidden_state_supervision = corrupted_hidden_states
-        hidden_state_supervision[:,last_subj_idx,:] = uncorrupted_hidden_states[:,last_subj_idx,:]
+        print(corrupted_hidden_states.shape)
+        print(clean_hidden_states.shape)
+        print(last_subj_idx)
+        import pdb; pdb.set_trace()
+        hidden_state_supervision[:,:,last_subj_idx,:] = clean_hidden_states[:,:,last_subj_idx,:]
     else:
         hidden_state_supervision = None
 
