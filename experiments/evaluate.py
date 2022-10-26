@@ -181,8 +181,7 @@ def make_editing_results_df(exp_name, n=1000):
     data = record
     # compute ROME metrics
     # record target_new_prob and fact erasure loss as needed
-    import pdb; pdb.set_trace()
-    cur_sum['target_new_prob'] = data['post']['rewrite_prompts_probs']
+    cur_sum['target_new_prob'] = np.exp(-data['post']['rewrite_prompts_probs'][0]['target_new'])
     if 'prior_prob' in data and data['prior_prob'] is not None:
         cur_sum['erasure_loss'] = np.abs(cur_sum['target_new_prob'] - data['prior_prob'])
     for prefix in ["pre", "post"]:
