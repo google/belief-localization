@@ -254,6 +254,7 @@ def make_editing_results_df(exp_name, n=1000):
     # add post-pre ppl scores
     if 'essence_score' in data['post']:
         cur_sum['essence_ppl_diff'] = cur_sum['post_essence_ppl'] - cur_sum['pre_essence_ppl'] # lower is better
+    import pdb; pdb.set_trace()
     # add ROME metrics to record_dict and append to dataframes
     record_dict.update(cur_sum)
     df = pd.DataFrame(record_dict)
