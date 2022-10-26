@@ -49,19 +49,16 @@ def apply_ft_to_model(
         subject = requests[0]['subject']
         e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
         last_subj_idx = e_range[1]
-        gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
+        gen_batch = simple_make_inputs(tok, prompts=[prompt] * num_noise_samples)
         gen_batch['output_hidden_states'] = True
         _, _, corrupted_hidden_states = corrupted_forward_pass(model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise, output_hidden_states=True)
-        # corrupted_hidden_states of shape [n_layers, num_noisy_samples, seq_len, hidden_dim]
+        # corrupted_hidden_states of shape [n_layers, num_noise_samples, seq_len, hidden_dim]
         corrupted_hidden_states = torch.stack([corrupted_hidden_states[layer] for layer in hparams.layers], dim=0)
-        clean_hidden_states = model(**gen_batch).hidden_states
+        gen_batch = simple_make_inputs(tok, prompts=[prompt])
+        clean_hidden_states = model(**gen_batch, output_hidden_states=True).hidden_states
         clean_hidden_states = torch.stack([clean_hidden_states[layer] for layer in hparams.layers], dim=0)
-        # splice uncorrupted hidden_states into corrupted_hidden_states where they are restored
+        # splice uncorrupted hidden_states into corrupted_hidden_states where they are restored. automatically broadcast across num_noise_samples dimension
         hidden_state_supervision = corrupted_hidden_states
-        print(corrupted_hidden_states.shape)
-        print(clean_hidden_states.shape)
-        print(last_subj_idx)
-        import pdb; pdb.set_trace()
         hidden_state_supervision[:,:,last_subj_idx,:] = clean_hidden_states[:,:,last_subj_idx,:]
     else:
         hidden_state_supervision = None
@@ -165,7 +162,7 @@ def execute_ft(
             last_token_inds = inputs["attention_mask"].sum(dim=1) - 1
             loss_mask = target_ids != tok.unk_token_id
             if args.weight_based_tracing:
-                inputs['return_hidden_states'] = True
+                inputs['output_hidden_states'] = True
 
             opt.zero_grad()
             bs = inputs["input_ids"].shape[0]
