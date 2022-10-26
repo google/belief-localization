@@ -123,7 +123,7 @@ def execute_ft(
     # Configure optimizer / gradients
     opt = torch.optim.SGD(
         [v for _, v in weights.items()],
-        lr=.1, #hparams.lr,
+        lr=1, #hparams.lr,
         weight_decay=hparams.weight_decay,
     )
     for name, w in model.named_parameters():
