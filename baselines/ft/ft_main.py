@@ -169,13 +169,6 @@ def execute_ft(
                 # loss = per_tok_loss.sum()
                 last_subj_ind = e_range[1] - 1
                 loss = per_tok_loss[last_subj_ind]
-                if it <= 5 or it % 10 == 0:
-                    print("tok embed: ", outputs.hidden_states[0][0,last_subj_ind,1])
-                    print("model output: ", hidden_states[0,0,last_subj_ind,1])
-                    print("supervision: ", hidden_state_supervision[0,0,last_subj_ind,1])
-                    print("grad: ", model.transformer.h[0].mlp.fc_out.weight.grad[1])
-                    print("weight: ", model.transformer.h[0].mlp.fc_out.weight[1])
-                    import pdb; pdb.set_trace()
                 
             loss = loss.mean()
             loss_meter.update(loss.item(), n=bs)
@@ -189,6 +182,14 @@ def execute_ft(
                     non_subj_embeds = np.setdiff1d(np.arange(n_embeds), embedding_token_idx)
                     embeddings.grad[non_subj_embeds,:] = 0
                 opt.step()
+
+            if it <= 5 or it % 10 == 0:
+                print("tok embed: ", outputs.hidden_states[0][0,last_subj_ind,1])
+                print("model output: ", hidden_states[0,0,last_subj_ind,1])
+                print("supervision: ", hidden_state_supervision[0,0,last_subj_ind,1])
+                print("grad: ", model.transformer.h[0].mlp.fc_out.weight.grad[1])
+                print("weight: ", model.transformer.h[0].mlp.fc_out.weight[1])
+                import pdb; pdb.set_trace()
 
             if type(hparams.norm_constraint) is float:
                 eps = hparams.norm_constraint
