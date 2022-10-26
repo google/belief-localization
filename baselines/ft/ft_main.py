@@ -182,6 +182,7 @@ def execute_ft(
                 loss_mat = (hidden_states - hidden_state_supervision)**2
                 per_tok_loss = loss_mat.sum(0).sum(0).sum(-1)
                 loss = per_tok_loss.sum()
+                import pdb; pdb.set_trace()
                 
             loss = loss.mean()
             loss_meter.update(loss.item(), n=bs)
