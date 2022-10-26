@@ -352,7 +352,6 @@ def main(
 
             # check if we should skip based on correctness or probability checks
             if correctness_check or target_prob_check > 0:
-                import pdb; pdb.set_trace()
                 eval_this_point = 0
                 if correctness_check:
                     gen_batch = simple_make_inputs(tok, prompts=[prompt])
@@ -596,6 +595,11 @@ if __name__ == "__main__":
         help="See paper for description",
     )
     parser.add_argument(
+        "--correctness_filter",
+        action="store_true",
+        help="Only eval on points with correct generations or p(target_true) >= .1",
+    )
+    parser.add_argument(
         "--conserve_memory",
         dest="conserve_memory",
         action="store_true",
@@ -608,8 +612,7 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
-    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=True, verbose=False, overwrite=False,
-                        tracing_reversal=False, fact_forcing=False)
+    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=True)
     args = parser.parse_args()
 
     # load model
@@ -685,8 +688,8 @@ if __name__ == "__main__":
                     override_hparams=override_hparams,
                     verbose=args.verbose,
                     overwrite=args.overwrite,
-                    correctness_check=True,
-                    target_prob_check=.1
+                    correctness_check=args.correctness_filter,
+                    target_prob_check=.1 if args.correctness_filter else 0
                 )
             # accumulate results
             exp_name = ROME_experiment_name_from_override_params(args, model_name, alg_name, ds_name, override_hparams, hparams_class)
