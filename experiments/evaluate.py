@@ -456,6 +456,27 @@ def main(
                         return x
                     else:
                         return x
+            # get hidden representations from corrupted+uncorrupted forward passes to use as targets for weight editing
+            if args.weight_based_tracing:
+                prompt = requests[0]['full_prompt']
+                subject = requests[0]['subject']
+                e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
+                last_subj_idx = e_range[1]
+                with torch.enable_grad():
+                    # corrupted forward pass. corrupted_hidden_states will be of shape [n_layers, num_noise_samples, seq_len, hidden_dim]
+                    gen_batch = simple_make_inputs(tok, prompts=[prompt] * num_noise_samples)
+                    gen_batch['output_hidden_states'] = True
+                    _, _, corrupted_hidden_states = corrupted_forward_pass(model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise, output_hidden_states=True)
+                    corrupted_hidden_states = torch.stack([corrupted_hidden_states[layer] for layer in hparams.layers], dim=0)
+                    # clean forward pass
+                    gen_batch = simple_make_inputs(tok, prompts=[prompt])
+                    clean_hidden_states = model(**gen_batch, output_hidden_states=True).hidden_states
+                    clean_hidden_states = torch.stack([clean_hidden_states[layer] for layer in hparams.layers], dim=0)
+                # splice uncorrupted hidden_states into corrupted_hidden_states where they are restored. automatically broadcast across num_noise_samples dimension
+                hidden_state_supervision = corrupted_hidden_states
+                hidden_state_supervision[:,:,last_subj_idx,:] = clean_hidden_states[:,:,last_subj_idx,:]
+            else:
+                hidden_state_supervision = None
 
             # Compute weight changes + record weights that changed
             start = time.time()
@@ -475,6 +496,7 @@ def main(
                   return_orig_weights=True,
                   num_noise_samples=num_noise_samples,
                   prior_prob=prior_prob,
+                  hidden_state_supervision=hidden_state_supervision
                   **args_conserve_memory,
               )
             exec_time = time.time() - start
