@@ -423,7 +423,7 @@ def main(
                 batch = make_inputs(mt.tokenizer, prompts=[prompt] * num_noise_samples, targets=[target_true] * num_noise_samples)
                 prior_prob = corrupted_forward_pass(mt.model, batch, None, tokens_to_mix=e_range, noise=hparams.editing_noise)
                 prior_prob = prior_prob.item()
-                request['request_baseline'] = mt.tokenizer.eos_token_id # arbitrary token, won't use these metrics anyway
+                request['request_baseline'] = mt.tokenizer.eos_token # arbitrary token, won't use these metrics anyway
                 request['target_new'] = request['target_true']
             elif args.fact_forcing or args.weight_based_tracing:
                 gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
