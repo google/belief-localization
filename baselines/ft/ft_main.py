@@ -199,7 +199,7 @@ def execute_ft(
                         v[...] = torch.clamp(
                             v, min=weights_copy[k] - eps, max=weights_copy[k] + eps
                         )
-        print(f"Total loss at epoch {it}: {loss_meter.avg:.4f}")
+        print(f"Total loss at epoch {it}: {loss_meter.avg:.4f} ", f" (pred prob: {pred_prob:.4f})" if args.fact_erasure else "")
 
         if loss_meter.avg < 1e-2:
             patience_counter += 1
