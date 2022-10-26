@@ -183,13 +183,14 @@ def execute_ft(
                     embeddings.grad[non_subj_embeds,:] = 0
                 opt.step()
 
-            if it <= 5 or it % 10 == 0:
-                print("tok embed: ", outputs.hidden_states[0][0,last_subj_ind,1])
-                print("model output: ", hidden_states[0,0,last_subj_ind,1])
-                print("supervision: ", hidden_state_supervision[0,0,last_subj_ind,1])
-                print("grad: ", model.transformer.h[0].mlp.fc_out.weight.grad[1])
-                print("weight: ", model.transformer.h[0].mlp.fc_out.weight[1])
-                import pdb; pdb.set_trace()
+            if args.weight_based_tracing:
+                if it <= 5 or it % 10 == 0:
+                    print("tok embed: ", outputs.hidden_states[0][0,last_subj_ind,1])
+                    print("model output: ", hidden_states[0,0,last_subj_ind,1])
+                    print("supervision: ", hidden_state_supervision[0,0,last_subj_ind,1])
+                    print("grad: ", model.transformer.h[0].mlp.fc_out.weight.grad[1])
+                    print("weight: ", model.transformer.h[0].mlp.fc_out.weight[1])
+                    import pdb; pdb.set_trace()    
 
             if type(hparams.norm_constraint) is float:
                 eps = hparams.norm_constraint
