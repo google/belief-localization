@@ -103,7 +103,8 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
         return_dict['v_num_grad_steps'] = 50
   if args.weight_based_tracing:
     if alg_name == "FT":
-        return_dict['num_steps'] = 500  
+        return_dict['num_steps'] = 500
+        return_dict['lr'] = 1e-5
   return return_dict
 
 def sweep_experiment_name(args, model_name, alg_name, ds_name, sweep_params):

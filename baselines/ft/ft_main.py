@@ -121,9 +121,9 @@ def execute_ft(
     targets = [r["target_new"]["str"] for r in requests] # if args.fact_erasure, these are set as target_true
     
     # Configure optimizer / gradients
-    opt = torch.optim.SGD(
+    opt = torch.optim.Adam(
         [v for _, v in weights.items()],
-        lr=1, #hparams.lr,
+        lr=hparams.lr,
         weight_decay=hparams.weight_decay,
     )
     for name, w in model.named_parameters():
