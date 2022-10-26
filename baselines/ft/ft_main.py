@@ -163,7 +163,7 @@ def execute_ft(
                 hidden_states = torch.stack([hidden_states[layer+1] for layer in hparams.layers], dim=0)
                 # loss_mat = (hidden_states - hidden_state_supervision)**2
                 # per_tok_loss = loss_mat.sum(0).sum(0).sum(-1)
-                loss_mat = (hidden_states[0,0:,:] - hidden_state_supervision[0,0,:,:])**2
+                loss_mat = (hidden_states[0,0,:,:] - hidden_state_supervision[0,0,:,:])**2
                 per_tok_loss = loss_mat.sum(-1)
                 # loss = per_tok_loss.sum()
                 loss = per_tok_loss[e_range[1]-1]
