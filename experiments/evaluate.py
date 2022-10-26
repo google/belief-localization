@@ -472,7 +472,8 @@ def main(
                 # splice uncorrupted hidden_states into corrupted_hidden_states where they are restored. automatically broadcast across num_noise_samples dimension
                 hidden_state_supervision = corrupted_hidden_states
                 hidden_state_supervision[:,:,last_subj_idx,:] = clean_hidden_states[:,:,last_subj_idx,:]
-                import pdb; pdb.set_trace()
+                # import pdb; pdb.set_trace()
+                # model(**gen_batch, output_hidden_states=True).hidden_states
             else:
                 hidden_state_supervision = None
 
