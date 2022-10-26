@@ -422,8 +422,7 @@ def main(
             elif args.fact_erasure:
                 batch = make_inputs(mt.tokenizer, prompts=[prompt] * num_noise_samples, targets=[target_true] * num_noise_samples)
                 prior_prob = corrupted_forward_pass(mt.model, batch, None, tokens_to_mix=e_range, noise=hparams.editing_noise)
-                if verbose:
-                    print(f" TARGET/PRIOR PROB: {prior_prob.item():.4f}")
+                prior_prob = prior_prob.item()
                 request['request_baseline'] = mt.tokenizer.eos_token_id # arbitrary token, won't use these metrics anyway
                 request['target_new'] = request['target_true']
             elif args.fact_forcing or args.weight_based_tracing:
