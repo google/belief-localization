@@ -166,11 +166,13 @@ def execute_ft(
                 loss_mat = (hidden_states[0,0,:,:] - hidden_state_supervision[0,0,:,:])**2
                 per_tok_loss = loss_mat.sum(-1)
                 # loss = per_tok_loss.sum()
-                loss = per_tok_loss[e_range[1]-1]
-                # if it % 10 == 0:
-                    # print(hidden_state_supervision[:,:,e_range[1],:10].shape)
-                    # print(hidden_state_supervision[:,:,e_range[1],:10])
-                    # import pdb; pdb.set_trace()
+                last_subj_ind = e_range[1] - 1
+                loss = per_tok_loss[last_subj_ind]
+                if it <= 1 or it % 10 == 0:
+                    print("tok embedding which was input: ", outputs.hidden_states[0][0,last_subj_ind,:10])
+                    print("model output: ", hidden_states[0,0,last_subj_ind,:10].shape)
+                    print("supervision: ", hidden_state_supervision[0,0,last_subj_ind,:10])
+                    import pdb; pdb.set_trace()
                 
             loss = loss.mean()
             loss_meter.update(loss.item(), n=bs)
