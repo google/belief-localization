@@ -159,19 +159,20 @@ def execute_ft(
                 pred_prob = torch.exp(-loss)
                 loss = torch.abs(pred_prob - prior_prob) 
             if args.weight_based_tracing:
+                # supervision will be of shape [n_layers, num_noise_samples, seq_len, hidden_dim]
                 hidden_states = outputs.hidden_states
                 hidden_states = torch.stack([hidden_states[layer+1] for layer in hparams.layers], dim=0)
                 # loss_mat = (hidden_states - hidden_state_supervision)**2
                 # per_tok_loss = loss_mat.sum(0).sum(0).sum(-1)
-                loss_mat = (hidden_states[0,0,:,:] - hidden_state_supervision[0,0,:,:])**2
-                per_tok_loss = loss_mat.sum(-1)
+                loss_mat = (hidden_states[0,0,:,1] - hidden_state_supervision[0,0,:,1])**2
+                per_tok_loss = loss_mat #.sum(-1)
                 # loss = per_tok_loss.sum()
                 last_subj_ind = e_range[1] - 1
                 loss = per_tok_loss[last_subj_ind]
-                if it <= 1 or it % 10 == 0:
-                    print("tok embedding which was input: ", outputs.hidden_states[0][0,last_subj_ind,:10])
-                    print("model output: ", hidden_states[0,0,last_subj_ind,:10].shape)
-                    print("supervision: ", hidden_state_supervision[0,0,last_subj_ind,:10])
+                if it <= 5 or it % 10 == 0:
+                    print("tok embed: ", outputs.hidden_states[0][0,last_subj_ind,1])
+                    print("model output: ", hidden_states[0,0,last_subj_ind,1])
+                    print("supervision: ", hidden_state_supervision[0,0,last_subj_ind,1])
                     import pdb; pdb.set_trace()
                 
             loss = loss.mean()
