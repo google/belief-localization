@@ -49,7 +49,7 @@ def score_from_batch(model, batch):
   }
   target_tokens = batch['target_ids']
   target_mask = batch['target_indicators']
-  logits = mt.model(**model_batch).logits
+  logits = model(**model_batch).logits
   log_probs = torch.log_softmax(logits, dim=-1)
   log_probs = log_probs
   # align probs and target mask by cutting off one token idx from the ends

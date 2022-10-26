@@ -711,8 +711,6 @@ if __name__ == "__main__":
     blob.upload_from_filename(save_path)
 
     print(f"saving csv at {save_path}...")
-    print("sample rows:")
-    print(results_df.loc[:,['case_id', 'subject', 'target', 'request', 'post_rewrite_success', 'post_neighborhood_success', 'post_paraphrase_success', 'post_score', 'essence_ppl_diff']])
     metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score']
     if len(window_sizes) == 1 and len(central_layers) == 1:
         print("\nfinal metrics: ")
@@ -722,5 +720,9 @@ if __name__ == "__main__":
                 print(f" {metric:.20s}: {avg_val:.3f}")
             else:
                 print(f" missing {metric}")
+    if args.verbose:
+        print("\nsample rows:")
+        print(results_df.loc[:,['case_id', 'subject', 'target', 'request', 'post_rewrite_success', 'post_neighborhood_success', 'post_paraphrase_success', 'post_score', 'essence_ppl_diff']])
+    
 
 
