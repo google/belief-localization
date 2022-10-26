@@ -458,9 +458,6 @@ def main(
                         return x
             # get hidden representations from corrupted+uncorrupted forward passes to use as targets for weight editing
             if args.weight_based_tracing:
-                prompt = requests[0]['full_prompt']
-                subject = requests[0]['subject']
-                e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
                 last_subj_idx = e_range[1]
                 with torch.enable_grad():
                     # corrupted forward pass. corrupted_hidden_states will be of shape [n_layers, num_noise_samples, seq_len, hidden_dim]
