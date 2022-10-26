@@ -464,15 +464,14 @@ def main(
                     gen_batch = simple_make_inputs(tok, prompts=[prompt] * num_noise_samples)
                     gen_batch['output_hidden_states'] = True
                     _, _, corrupted_hidden_states = corrupted_forward_pass(model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise, output_hidden_states=True)
-                    corrupted_hidden_states = torch.stack([corrupted_hidden_states[layer] for layer in hparams.layers], dim=0)
+                    corrupted_hidden_states = torch.stack([corrupted_hidden_states[layer+1] for layer in hparams.layers], dim=0)
                     # clean forward pass
                     gen_batch = simple_make_inputs(tok, prompts=[prompt])
                     clean_hidden_states = model(**gen_batch, output_hidden_states=True).hidden_states
-                    clean_hidden_states = torch.stack([clean_hidden_states[layer] for layer in hparams.layers], dim=0)
+                    clean_hidden_states = torch.stack([clean_hidden_states[layer+1] for layer in hparams.layers], dim=0)
                 # splice uncorrupted hidden_states into corrupted_hidden_states where they are restored. automatically broadcast across num_noise_samples dimension
                 hidden_state_supervision = corrupted_hidden_states
                 hidden_state_supervision[:,:,last_subj_idx,:] = clean_hidden_states[:,:,last_subj_idx,:]
-                # model(**gen_batch, output_hidden_states=True).hidden_states
             else:
                 hidden_state_supervision = None
 

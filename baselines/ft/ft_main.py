@@ -160,7 +160,7 @@ def execute_ft(
             if args.weight_based_tracing:
                 import pdb; pdb.set_trace()
                 hidden_states = outputs.hidden_states
-                hidden_states = torch.stack([hidden_states[layer] for layer in hparams.layers], dim=0)
+                hidden_states = torch.stack([hidden_states[layer+1] for layer in hparams.layers], dim=0)
                 loss_mat = (hidden_states - hidden_state_supervision)**2
                 per_tok_loss = loss_mat.sum(0).sum(0).sum(-1)
                 loss = per_tok_loss.sum()
