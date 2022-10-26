@@ -81,7 +81,6 @@ def compute_rewrite_quality_counterfact(
             ]
         )
     }
-    import pdb; pdb.set_trace()
     if snips is not None:
         # Gather reference texts
         rel_id = record["requested_rewrite"]["relation_id"]
@@ -119,7 +118,7 @@ def test_batch_prediction(
     """ """
     
     # calculate the token indices for the subject for each prompt. evaluation gets done in a batch, so need to noise at different token indices depending on the data point
-    if args.fact_forcing:
+    if args.fact_forcing or args.weight_based_tracing:
         prng = np.random.RandomState(1) 
         embed_layername = layername(model, 0, 'embed')
         e_ranges = []

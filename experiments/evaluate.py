@@ -180,6 +180,11 @@ def make_editing_results_df(exp_name, n=1000):
     cur_sum = collections.defaultdict(lambda: [])
     data = record
     # compute ROME metrics
+    # record target_new_prob and fact erasure loss as needed
+    import pdb; pdb.set_trace()
+    cur_sum['target_new_prob'] = data['post']['rewrite_prompts_probs']
+    if 'prior_prob' in data and data['prior_prob'] is not None:
+        cur_sum['erasure_loss'] = np.abs(cur_sum['target_new_prob'] - data['prior_prob'])
     for prefix in ["pre", "post"]:
         # record essence_drift metric
         if 'essence_score' in data[prefix]:
@@ -369,7 +374,7 @@ def main(
                 if not eval_this_point > 0:
                     if verbose:
                         print(" Skipping this point due to it being incorrect and not meeting the minimum target prob.")
-                        if target_prob_check > 0: print(f" Target prob: {scores}")
+                        if target_prob_check > 0: print(f" Target prob: {scores[0].item():.4f}")
                         if correctness_check:     print(f" Pred: {preds}")
                     continue
 
@@ -486,12 +491,11 @@ def main(
                     "time": exec_time,
                     "post": ds_eval_method(args, edited_model, tok, record, snips, vec, skip_generation_tests),
                 }
-
                 for k, v in weights_copy.items():
                     nethook.get_parameter(model, k)[...] = v.to("cuda")
                 metrics["pre"] = ds_eval_method(args, model, tok, record, snips, vec, skip_generation_tests)
+                metrics['prior_prob'] = prior_prob
 
-            # print("metrics: ", metrics)
             print("Evaluation took", time.time() - start)
             # Dump metrics in .json
             with open(case_result_path, "w") as f:
