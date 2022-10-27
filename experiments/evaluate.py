@@ -166,7 +166,6 @@ def make_editing_results_df(exp_name, n=1000):
   for case_id in range(n):
     case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
     if not os.path.exists(case_result_path):
-      import pdb; pdb.set_trace()
       print("skipping ", case_result_path, " does not exist")
       continue
     with open(case_result_path, 'r') as f:
