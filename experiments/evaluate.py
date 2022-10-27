@@ -521,6 +521,7 @@ def main(
             print("Evaluation took", time.time() - start)
             # Dump metrics in .json
             with open(case_result_path, "w") as f:
+                print(metrics)
                 json.dump(metrics, f, indent=1)
             print('\n')
         else:
