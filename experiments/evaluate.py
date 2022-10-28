@@ -124,7 +124,7 @@ def sweep_experiment_name(args, model_name, alg_name, ds_name, sweep_params):
     obj = '_fact-erasure'
   elif args.weight_based_tracing:
     obj = '_weight-tracing'
-  return f'{exp_name}{obj}_n{args.dataset_size_limit}.csv'
+  return f'{exp_name}{obj}_n{args.dataset_size_limit}'
 
 def ROME_experiment_name(args, model_name, alg_name, ds_name, hparams_to_add):
   exp_name = f'{model_name}/{alg_name}_outputs_{ds_name}'
@@ -186,10 +186,18 @@ def make_editing_results_df(exp_name, n=1000):
     # compute ROME metrics
     # record target_new_prob and fact erasure loss as needed
     cur_sum['target_new_prob'] = np.exp(-data['post']['rewrite_prompts_probs'][0]['target_new'])
+    cur_sum['target_new_pre_prob'] = np.exp(-data['pre']['rewrite_prompts_probs'][0]['target_new'])
     if 'prior_prob' in data and data['prior_prob'] is not None:
         cur_sum['erasure_loss'] = np.abs(cur_sum['target_new_prob'] - data['prior_prob'])
     else:
         cur_sum['erasure_loss'] = 'NA'
+    # record difference in pre and post paraphrase and neighbor scores for target_new
+    for data_type in ['paraphrase', 'neighborhood']:
+        post_prob = np.exp(-data['post'][f'{data_type}_prompts_probs'][0]['target_new'])
+        pre_prob = np.exp(-data['pre'][f'{data_type}_prompts_probs'][0]['target_new'])
+        cur_sum[f'{data_type}_prob_diff'] = post_prob - pre_prob
+        cur_sum[f'{data_type}_pre_prob'] = pre_prob
+        cur_sum[f'{data_type}_post_prob'] = post_prob
     for prefix in ["pre", "post"]:
         # record essence_drift metric
         if 'essence_score' in data[prefix]:
