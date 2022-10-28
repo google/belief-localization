@@ -524,8 +524,6 @@ def main(
             # Dump metrics in .json
             with open(case_result_path, "w") as f:
                 json.dump(metrics, f, indent=1)
-            print(metrics)
-            import pdb; pdb.set_trace()
             print('\n')
         else:
             if verbose:
@@ -744,7 +742,7 @@ if __name__ == "__main__":
     blob.upload_from_filename(save_path)
 
     print(f"saving csv at {save_path}...")
-    metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
+    metrics = ['target_new_prob', 'post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
     if len(window_sizes) == 1 and len(central_layers) == 1:
         print("\nfinal metrics: ")
         for metric in metrics:
