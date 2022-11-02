@@ -511,7 +511,6 @@ if __name__ == "__main__":
     # begin tracing
     template_id = 8
     k = 0
-    eval_size = 1000
     restore_module = None
     ovr_exp_name = f"{_model_name}_{args.ds_name}_k{k}_sd{RANDOM_SEED}_tracing_sweep_n{args.dataset_size_limit}"
     print("Starting experiment: ", ovr_exp_name)
@@ -550,8 +549,11 @@ if __name__ == "__main__":
                                         explain_quantity='label',
                                         show_plots=False, 
                                         save_plots=True,
-                                        k=k, answers=None,
-                                        n=eval_size, random_seed=RANDOM_SEED, prompt_data=prompt_ex,
+                                        k=k, 
+                                        answers=None,
+                                        n=args.dataset_size_limit, 
+                                        random_seed=RANDOM_SEED, 
+                                        prompt_data=prompt_ex,
                                         template_id=template_id, 
                                         print_examples=10,
                                         overwrite=False)
