@@ -251,7 +251,7 @@ def results_dict_to_df(results_dict, tokenizer, exp_name, task_name, split_name)
   df = pd.concat([pd.DataFrame(point) for point in df_dicts])
   return df
 
-def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data, 
+def causal_tracing_loop(experiment_name, task_name, split_name, model_name, mt, eval_data, 
                         num_samples, noise_sd, restore_module, window_size, show_plots, 
                         explain_quantity,
                         k, random_seed=0, n=None, prompt_data=None, 
@@ -287,6 +287,7 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
   else:
     eval_data_loop = eval_data
   # begin eval loop
+  _model_name = model_name.split('/')[-1]
   effective_batch_size = 1
   n_chunks = np.ceil(len(eval_data_loop) / effective_batch_size)
   causal_tracing_results = []
@@ -370,7 +371,6 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
     for kind in kinds:
       # potentially skip if exists
       if not overwrite:
-        _model_name = model_name.split('/')[-1]
         save_path = f"{BASE_DIR}/results/{_model_name}/traces/{experiment_name}_{data_point_id}_{kind}.csv"
         if os.path.exists(save_path):
           if printing:
@@ -395,7 +395,6 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
         plot_name = f"{experiment_name}_plot{data_point_id}_{kind}.pdf"
         save_path = os.path.join(f'{BASE_DIR}/results/{_model_name}/traces', plot_name) if plot_name else None 
         print(f"saving plot at {save_path}")
-        _model_name = model_name.split('/')[-1]
         plot_trace_heatmap(results_dict, show_plot=show_plots, savepdf=save_path, modelname=_model_name)
         save_path = f"{BASE_DIR}/results/{_model_name}/traces/{experiment_name}_{data_point_id}_{kind}.npz"
         if printing:
@@ -542,7 +541,8 @@ if __name__ == "__main__":
         _model_name = model_name.split('/')[-1]
         exp_name = f"{_model_name}_{args.ds_name}_k{k}_wd{window_size}_sd{RANDOM_SEED}"
         if args.run:
-            results_df, metadata_df = causal_tracing_loop(exp_name, args.ds_name, "", mt, eval_data,
+            results_df, metadata_df = causal_tracing_loop(exp_name, args.ds_name, "", args.model_name, 
+                                        mt, eval_data,
                                         num_samples, noise_sd, restore_module, window_size, 
                                         max_decode_steps=max_decode_steps,
                                         explain_quantity='label',
