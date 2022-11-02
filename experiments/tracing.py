@@ -387,6 +387,10 @@ def causal_tracing_loop(experiment_name, task_name, split_name, model_name, mt, 
       results_dict['label_str'] = label
       results_dict['correct_prediction'] = is_correct
       results_df = results_dict_to_df(results_dict, mt.tokenizer, experiment_name, task_name, split_name)
+      if printing:
+        max_score = results_dict['scores'].max()
+        print("Max pred: ", max_score)
+        print("Corrupted pred: ", results_dict['low_score'])
       causal_tracing_results.append(results_df)
       # plot and save results (both results_dict, for their plotting code, and the results_df, for ours)
       if save_plots:
