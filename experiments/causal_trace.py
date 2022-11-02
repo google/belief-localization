@@ -646,7 +646,7 @@ def plot_trace_heatmap(result, savepdf=None, show_plot=True, title=None, xlabel=
         ax.set_yticklabels(labels)
         if not kind:
             title = "Impact of restoring state after corrupted input"
-            xlab = f"single restored layer within {model_name}"
+            xlab = f"single restored layer within {modelname}"
         else:
             kindname = "MLP" if kind == "mlp" else "Attn"
             title = f"Impact of restoring {kindname} after corrupted input"

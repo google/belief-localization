@@ -396,8 +396,8 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
         plot_name = f"{experiment_name}_plot{data_point_id}_{kind}.pdf"
         save_path = os.path.join(f'{BASE_DIR}/results/plots', plot_name) if plot_name else None 
         print(f"saving plot at {save_path}")
-        plot_trace_heatmap(results_dict, show_plot=show_plots, savepdf=save_path)
         _model_name = model_name.split('/')[-1]
+        plot_trace_heatmap(results_dict, show_plot=show_plots, savepdf=save_path, modelname=_model_name)
         save_path = f"{BASE_DIR}/results/{_model_name}/cases/{experiment_name}_{data_point_id}_{kind}.npz"
         if printing:
           print(f"saving results at {save_path}")
