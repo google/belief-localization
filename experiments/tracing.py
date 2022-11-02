@@ -76,6 +76,14 @@ def load_counterfact_dataset(args):
                                 })
     return counterfact_data
 
+def format_time(runtime):
+  if runtime > 3600:
+    return f"{runtime/3600:.2f} hours"
+  if runtime > 60:
+    return f"{runtime/60:.2f} minutes"
+  else:
+    return f"{runtime:.2f} secs"
+
 def load_factual_dataset(args):
     knowns = KnownsDataset(DATA_DIR)
     knowledge_inputs = [knowledge['prompt'].strip() for knowledge in knowns]
