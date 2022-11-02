@@ -415,8 +415,6 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
   return results_df, metadata_df
 
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -429,7 +427,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ds_name",
         choices=["counterfact", "zsre"],
-        default="cf",
+        default="counterfact",
         help="Dataset to perform evaluations on. Either CounterFact (cf) or zsRE (zsre).",
     )
     parser.add_argument(
@@ -508,6 +506,7 @@ if __name__ == "__main__":
     template_id = 8
     k = 0
     eval_size = 1000
+    restore_module = None
 
     if args.ds_name == 'counterfact':
         use_data = load_counterfact_dataset(args)
@@ -525,29 +524,28 @@ if __name__ == "__main__":
         noise_sd = .094
     elif 'neox' in args.model_name:
         noise_sd = .03
-        restore_module = None
         max_decode_steps=24
 
     results_dfs = []
     for window_size in window_sizes:
         _model_name = model_name.split('/')[-1]
-    exp_name = f"{_model_name}_{args.ds_name}_k{k}_wd{window_size}_sd{RANDOM_SEED}"
-    if args.run:
-        results_df, metadata_df = causal_tracing_loop(exp_name, args.ds_name, "1000", mt, eval_data,
-                                    num_samples, noise_sd, restore_module, window_size, 
-                                    max_decode_steps=max_decode_steps,
-                                    explain_quantity='label',
-                                    show_plots=False, 
-                                    save_plots=True,
-                                    k=k, answers=None,
-                                    n=eval_size, random_seed=RANDOM_SEED, prompt_data=prompt_ex,
-                                    template_id=template_id, 
-                                    print_examples=10,
-                                    overwrite=False)
-    else:    
-        results_df = make_results_df(_model_name, exp_name, count=eval_size)
-        results_df['trace_window_size'] = window_size
-        results_dfs.append(results_df)
+        exp_name = f"{_model_name}_{args.ds_name}_k{k}_wd{window_size}_sd{RANDOM_SEED}"
+        if args.run:
+            results_df, metadata_df = causal_tracing_loop(exp_name, args.ds_name, "1000", mt, eval_data,
+                                        num_samples, noise_sd, restore_module, window_size, 
+                                        max_decode_steps=max_decode_steps,
+                                        explain_quantity='label',
+                                        show_plots=False, 
+                                        save_plots=True,
+                                        k=k, answers=None,
+                                        n=eval_size, random_seed=RANDOM_SEED, prompt_data=prompt_ex,
+                                        template_id=template_id, 
+                                        print_examples=10,
+                                        overwrite=False)
+        else:    
+            results_df = make_results_df(_model_name, exp_name, count=eval_size)
+            results_df['trace_window_size'] = window_size
+            results_dfs.append(results_df)
 
     all_results_df = pd.concat(results_dfs)
     ovr_exp_name = f"{_model_name}_{args.ds_name}_k{k}_sd{RANDOM_SEED}_tracing_sweep_n{args.dataset_size_limit}"
