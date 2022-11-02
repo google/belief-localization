@@ -540,7 +540,6 @@ if __name__ == "__main__":
 
     results_dfs = []
     for window_size in window_sizes:
-        _model_name = model_name.split('/')[-1]
         exp_name = f"{_model_name}_{args.ds_name}_k{k}_wd{window_size}_sd{RANDOM_SEED}"
         if args.run:
             results_df, metadata_df = causal_tracing_loop(exp_name, args.ds_name, "", args.model_name, 
