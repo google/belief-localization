@@ -27,7 +27,7 @@ from dsets import (
     KnownsDataset,
     get_tfidf_vectorizer,
 )
-from experiments.causal_trace import ModelAndTokenizer, score_from_batch, get_high_and_low_scores
+from experiments.causal_trace import ModelAndTokenizer, score_from_batch, get_high_and_low_scores, plot_trace_heatmap
 from experiments.causal_trace import calculate_hidden_flow, layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs, predict_model
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
@@ -372,7 +372,7 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
       # potentially skip if exists
       if not overwrite:
         _model_name = model_name.split('/')[-1]
-        save_path = f"/content/results/{_model_name}/cases/{experiment_name}_{data_point_id}_{kind}.csv"
+        save_path = f"{BASE_DIR}/results/{_model_name}/cases/{experiment_name}_{data_point_id}_{kind}.csv"
         if os.path.exists(save_path):
           if printing:
             print(f"skipping batch {batch_num}, point {data_point_id}, as it is already written")
@@ -394,11 +394,11 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
       # plot and save results (both results_dict, for their plotting code, and the results_df, for ours)
       if save_plots:
         plot_name = f"{experiment_name}_plot{data_point_id}_{kind}.pdf"
-        save_path = os.path.join('/content/results/plots', plot_name) if plot_name else None 
+        save_path = os.path.join(f'{BASE_DIR}/results/plots', plot_name) if plot_name else None 
         print(f"saving plot at {save_path}")
         plot_trace_heatmap(results_dict, show_plot=show_plots, savepdf=save_path)
         _model_name = model_name.split('/')[-1]
-        save_path = f"/content/results/{_model_name}/cases/{experiment_name}_{data_point_id}_{kind}.npz"
+        save_path = f"{BASE_DIR}/results/{_model_name}/cases/{experiment_name}_{data_point_id}_{kind}.npz"
         if printing:
           print(f"saving results at {save_path}")
         np.savez(save_path, results_dict)
