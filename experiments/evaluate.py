@@ -349,9 +349,6 @@ def main(
         case_id = record["case_id"] if 'case_id' in record else 'known_id'
         case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
         rewrite_this_point = overwrite or not os.path.exists(case_result_path)
-        if case_id > 1529 and case_id < 1535:
-            print(case_id)
-            import pdb; pdb.set_trace()
         if case_id == 1531: # weird memory issue here
             continue
         if rewrite_this_point:
