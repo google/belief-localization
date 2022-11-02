@@ -475,6 +475,7 @@ if __name__ == "__main__":
     np.random.seed(RANDOM_SEED)
 
     # run experiment
+    _model_name = os.path.split(args.model_name)[-1]
     if args.run:
         torch.set_grad_enabled(False)
 
@@ -504,7 +505,6 @@ if __name__ == "__main__":
             tokenizer = GPTNeoXTokenizerFast.from_pretrained("EleutherAI/gpt-neox-20b")
             mt = ModelAndTokenizer(model=model, tokenizer=tokenizer, torch_dtype=torch_dtype)
 
-        _model_name = os.path.split(model_name)[-1]
         os.makedirs(f'{BASE_DIR}/results/{_model_name}', exist_ok=True)    
         os.makedirs(f'{BASE_DIR}/results/{_model_name}/traces', exist_ok=True)    
         

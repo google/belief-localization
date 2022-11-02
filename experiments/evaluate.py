@@ -754,7 +754,7 @@ if __name__ == "__main__":
 
     print(f"saving csv at {save_path}...")
     if args.fact_erasure or args.fact_amplification or args.fact_forcing or args.weight_based_tracing:
-        metrics = ['rewrite_prob_diff', 'paraphrase_prob_diff', 'neighborhood_prob_diff', 'essence_ppl_diff', 'post_score']
+        metrics = ['rewrite_prob_diff', 'paraphrase_prob_diff', 'neighborhood_prob_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
     else:
         metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score']
     if len(window_sizes) == 1 and len(central_layers) == 1:
