@@ -519,19 +519,23 @@ if __name__ == "__main__":
     window_sizes = [int(x) for x in args.window_sizes.split()]
     if 'gpt2-xl' in args.model_name:
         noise_sd = .1
+        max_decode_steps=36
     elif 'gpt-j-6B' in args.model_name:
         # they use .025 (use to recreate orig plots), though it seems like 3*sd is .094, and 3*sd is a rule they use elsewhere.
         noise_sd = .094
+        max_decode_steps=36
     elif 'neox' in args.model_name:
         noise_sd = .03
         max_decode_steps=24
+    else:
+        noise_sd = .01
 
     results_dfs = []
     for window_size in window_sizes:
         _model_name = model_name.split('/')[-1]
         exp_name = f"{_model_name}_{args.ds_name}_k{k}_wd{window_size}_sd{RANDOM_SEED}"
         if args.run:
-            results_df, metadata_df = causal_tracing_loop(exp_name, args.ds_name, "1000", mt, eval_data,
+            results_df, metadata_df = causal_tracing_loop(exp_name, args.ds_name, "", mt, eval_data,
                                         num_samples, noise_sd, restore_module, window_size, 
                                         max_decode_steps=max_decode_steps,
                                         explain_quantity='label',
@@ -553,5 +557,5 @@ if __name__ == "__main__":
     # upload results csv to google bucket
     storage_client = storage.Client()
     bucket = storage_client.get_bucket('research-brain-belief-localization-xgcp')
-    blob = bucket.blob(f'output/{file_name}')
+    blob = bucket.blob(f'output/{ovr_exp_name}.csv')
     blob.upload_from_filename(save_path)
