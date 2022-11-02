@@ -557,8 +557,8 @@ if __name__ == "__main__":
                                         overwrite=False)
         else:    
             results_df = make_results_df(_model_name, exp_name, count=eval_size)
-            results_df['trace_window_size'] = window_size
-            results_dfs.append(results_df)
+        results_df['trace_window_size'] = window_size
+        results_dfs.append(results_df)
 
     all_results_df = pd.concat(results_dfs)
     save_path = f'{BASE_DIR}/results/{ovr_exp_name}.csv'
