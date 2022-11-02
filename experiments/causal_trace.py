@@ -595,9 +595,11 @@ def plot_hidden_flow(
     plot_trace_heatmap(result, savepdf)
 
 
-def plot_trace_heatmap(result, savepdf=None, title=None, xlabel=None, modelname=None):
+def plot_trace_heatmap(result, savepdf=None, show_plot=True, title=None, xlabel=None, modelname=None):
     differences = result["scores"]
     low_score = result["low_score"]
+    base_score = result["base_score"]
+    high_score = result["high_score"]
     answer = result["answer"]
     kind = (
         None
@@ -606,45 +608,68 @@ def plot_trace_heatmap(result, savepdf=None, title=None, xlabel=None, modelname=
     )
     window = result.get("window", 10)
     labels = list(result["input_tokens"])
-    for i in range(*result["subject_range"]):
+    # offset by prompt length if there is a prompt with separator "\n"
+    sep = '\n'
+    subj_range = result['subject_range']
+    if sep in labels:
+      reversed_labels = list(reversed(labels))
+      last_sep_idx = len(labels) - reversed_labels.index('\n') - 1
+      new_labels = labels[(last_sep_idx+1):]
+      offset_by = len(labels)-len(new_labels)
+      labels = new_labels
+      subj_range = (subj_range[0] - offset_by, subj_range[1] - offset_by)
+    for i in range(*subj_range):
         labels[i] = labels[i] + "*"
-
+    # if labels do not match differences, it's because we started restoring
+    # at the subject token beginning, so pad the differences with low_score
+    if len(labels) != differences.shape[0]:
+      short_by = len(labels)  - differences.shape[0]
+      low_score_padding = low_score*np.ones((short_by, differences.shape[1]))
+      differences = np.concatenate((low_score_padding, differences), axis=0)
+    assert len(labels) == differences.shape[0], "num tokens doesnt match differences size"
+    v_size = 3.5 if len(labels) < 10 else 4.1
+    h_size = 2.8 if differences.shape[1] < 30 else 3.2
     with plt.rc_context(rc={"font.family": "Times New Roman"}):
-        fig, ax = plt.subplots(figsize=(3.5, 2), dpi=200)
+        fig, ax = plt.subplots(figsize=(h_size, v_size), dpi=300)
         h = ax.pcolor(
             differences,
             cmap={None: "Purples", "None": "Purples", "mlp": "Greens", "attn": "Reds"}[
                 kind
             ],
             vmin=low_score,
+            vmax=high_score,
         )
         ax.invert_yaxis()
         ax.set_yticks([0.5 + i for i in range(len(differences))])
         ax.set_xticks([0.5 + i for i in range(0, differences.shape[1] - 6, 5)])
         ax.set_xticklabels(list(range(0, differences.shape[1] - 6, 5)))
         ax.set_yticklabels(labels)
-        if not modelname:
-            modelname = "GPT"
         if not kind:
-            ax.set_title("Impact of restoring state after corrupted input")
-            ax.set_xlabel(f"single restored layer within {modelname}")
+            title = "Impact of restoring state after corrupted input"
+            xlab = f"single restored layer within {model_name}"
         else:
             kindname = "MLP" if kind == "mlp" else "Attn"
-            ax.set_title(f"Impact of restoring {kindname} after corrupted input")
-            ax.set_xlabel(f"center of interval of {window} restored {kindname} layers")
+            title = f"Impact of restoring {kindname} after corrupted input"
+            xlab = f"center of interval of {window} restored {kindname} layers"
+        xlab += f"\n orig prob: {round(base_score, 3)}, noise prob: {round(low_score, 3)}"
+        ax.set_xlabel(xlab)
         cb = plt.colorbar(h)
         if title is not None:
-            ax.set_title(title)
+            ax.set_title(title, x=.5, y=1.01)
+            # ax.set_title(title, x=.5, y=1.1)
         if xlabel is not None:
             ax.set_xlabel(xlabel)
         elif answer is not None:
             # The following should be cb.ax.set_xlabel, but this is broken in matplotlib 3.5.1.
-            cb.ax.set_title(f"p({str(answer).strip()})", y=-0.16, fontsize=10)
+            cb.ax.set_title(f"p({str(answer).strip()})", y=-.08, fontsize=10)
+            # cb.ax.set_title(f"p({str(answer).strip()})", y=-0.16, fontsize=10)
         if savepdf:
             os.makedirs(os.path.dirname(savepdf), exist_ok=True)
             plt.savefig(savepdf, bbox_inches="tight")
+            if show_plot:
+              plt.show() 
             plt.close()
-        else:
+        elif show_plot:
             plt.show()
 
 
