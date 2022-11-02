@@ -389,8 +389,8 @@ def causal_tracing_loop(experiment_name, task_name, split_name, model_name, mt, 
       results_df = results_dict_to_df(results_dict, mt.tokenizer, experiment_name, task_name, split_name)
       if printing:
         max_score = results_dict['scores'].max()
-        print("Max pred: ", max_score)
-        print("Corrupted pred: ", results_dict['low_score'])
+        print(f"Max pred: {max_score.item():.4f}")
+        print(f"Corrupted pred: {results_dict['low_score']:.4f}")
       causal_tracing_results.append(results_df)
       # plot and save results (both results_dict, for their plotting code, and the results_df, for ours)
       if save_plots:
@@ -557,7 +557,8 @@ if __name__ == "__main__":
                                         prompt_data=prompt_ex,
                                         template_id=template_id, 
                                         print_examples=10,
-                                        overwrite=args.overwrite)
+                                        overwrite=args.overwrite,
+                                        correctness_filter=True)
         results_df = make_results_df(_model_name, exp_name, count=args.dataset_size_limit)
         results_df['trace_window_size'] = window_size
         results_dfs.append(results_df)
