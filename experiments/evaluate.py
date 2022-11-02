@@ -183,21 +183,19 @@ def make_editing_results_df(exp_name, n=1000):
     }
     cur_sum = collections.defaultdict(lambda: [])
     data = record
-    # compute ROME metrics
-    # record target_new_prob and fact erasure loss as needed
-    cur_sum['target_new_prob'] = np.exp(-data['post']['rewrite_prompts_probs'][0]['target_new'])
-    cur_sum['target_new_pre_prob'] = np.exp(-data['pre']['rewrite_prompts_probs'][0]['target_new'])
-    if 'prior_prob' in data and data['prior_prob'] is not None:
-        cur_sum['erasure_loss'] = np.abs(cur_sum['target_new_prob'] - data['prior_prob'])
-    else:
-        cur_sum['erasure_loss'] = 'NA'
-    # record difference in pre and post paraphrase and neighbor scores for target_new
-    for data_type in ['paraphrase', 'neighborhood']:
+    # record difference in pre and post probs for target_new
+    for data_type in ['rewrite', 'paraphrase', 'neighborhood']:
         post_prob = np.exp(-data['post'][f'{data_type}_prompts_probs'][0]['target_new'])
         pre_prob = np.exp(-data['pre'][f'{data_type}_prompts_probs'][0]['target_new'])
         cur_sum[f'{data_type}_prob_diff'] = post_prob - pre_prob
         cur_sum[f'{data_type}_pre_prob'] = pre_prob
         cur_sum[f'{data_type}_post_prob'] = post_prob
+    # record erasure loss for fact erasure
+    if 'prior_prob' in data and data['prior_prob'] is not None:
+        cur_sum['erasure_loss'] = np.abs(cur_sum['rewrite_post_prob'] - data['prior_prob'])
+    else:
+        cur_sum['erasure_loss'] = 'NA'
+    # compute ROME metrics
     for prefix in ["pre", "post"]:
         # record essence_drift metric
         if 'essence_score' in data[prefix]:
@@ -626,6 +624,11 @@ if __name__ == "__main__":
         help="See paper for description",
     )
     parser.add_argument(
+        "--fact_amplification",
+        action="store_true",
+        help="See paper for description",
+    )
+    parser.add_argument(
         "--weight_based_tracing",
         action="store_true",
         help="See paper for description",
@@ -750,7 +753,10 @@ if __name__ == "__main__":
     blob.upload_from_filename(save_path)
 
     print(f"saving csv at {save_path}...")
-    metrics = ['target_new_prob', 'post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
+    if args.fact_erasure or args.fact_amplification or args.fact_forcing or args.weight_based_tracing:
+        metrics = ['rewrite_prob_diff', 'paraphrase_prob_diff', 'neighborhood_prob_diff', 'essence_ppl_diff', 'post_score']
+    else:
+        metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score']
     if len(window_sizes) == 1 and len(central_layers) == 1:
         print("\nfinal metrics: ")
         for metric in metrics:
