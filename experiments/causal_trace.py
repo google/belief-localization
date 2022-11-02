@@ -302,6 +302,7 @@ def trace_with_patch(
             [untuple(td[layer].output).detach().cpu() for layer in trace_layers], dim=2)
         return outputs, all_traced
 
+    # return outputs.item()
     return outputs
 
 
@@ -378,8 +379,7 @@ def calculate_hidden_flow(
     batch_size = (samples+1)
     batch = make_inputs(mt.tokenizer, prompts=[prompt] * batch_size, targets=[answer] * batch_size)
     e_range = find_token_range(mt.tokenizer, substring=subject, prompt_str=prompt)
-    import pdb; pdb.set_trace()
-    low_score, _ = trace_with_patch(mt.model, batch, [], pred_id, tokens_to_mix=e_range, noise=noise)
+    low_score = trace_with_patch(mt.model, batch, [], pred_id, tokens_to_mix=e_range, noise=noise)
     if not kind:
         differences = trace_important_states(
             mt.model, mt.num_layers, batch, e_range, pred_id, noise=noise,
@@ -455,7 +455,6 @@ def score_from_batch(model, batch):
   target_mask = batch['target_indicators']
   logits = model(**model_batch).logits
   log_probs = torch.log_softmax(logits, dim=-1)
-  log_probs = log_probs
   # align probs and target mask by cutting off one token idx from the ends
   log_probs = log_probs[:,:-1,:] # batch_size x seq_len x vocab_size
   target_tokens = target_tokens[:,1:] # batch_size x seq_len
