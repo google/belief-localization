@@ -28,7 +28,7 @@ from dsets import (
     get_tfidf_vectorizer,
 )
 from experiments.causal_trace import ModelAndTokenizer, score_from_batch, get_high_and_low_scores
-from experiments.causal_trace import layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs, predict_model
+from experiments.causal_trace import calculate_hidden_flow, layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs, predict_model
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from rome import ROMEHyperParams, apply_rome_to_model
@@ -101,11 +101,10 @@ def verbalize(label, answers, inverted_labels=False):
   '''
   assert label < len(answers), f"requesting label {label} but only {len(answers)} answers"
   if not inverted_labels:
-    return_answer = answers[label]
+    return answers[label]
   else:
     assert len(answers) == 2, "using inverted_labels=True but more than two answers provided"
     return answers[1-label]
-  return answers[label] 
 
 def format_example(input, label_str="", answers=None, cot_reason=None, template_id=0):
   if template_id == 0:
@@ -480,8 +479,7 @@ if __name__ == "__main__":
             mt = ModelAndTokenizer(model_name, low_cpu_mem_usage=mem_usage, torch_dtype=torch_dtype)
             torch.cuda.empty_cache()
             mt.model.eval().cuda()
-            mt.tokenizer.pad_token = mt.tokenizer.eos_token
-            mt.tokenizer.pad_token_id = mt.tokenizer.eos_token_id
+            mt.tokenizer.add_special_tokens({'pad_token' : mt.tokenizer.eos_token})
         else:
             from transformers import GPTNeoXForCausalLM, GPTNeoXTokenizerFast
             model = GPTNeoXForCausalLM.from_pretrained("EleutherAI/gpt-neox-20b", 
@@ -507,6 +505,8 @@ if __name__ == "__main__":
     k = 0
     eval_size = 1000
     restore_module = None
+    ovr_exp_name = f"{_model_name}_{args.ds_name}_k{k}_sd{RANDOM_SEED}_tracing_sweep_n{args.dataset_size_limit}"
+    print("Starting experiment: ", ovr_exp_name)
 
     if args.ds_name == 'counterfact':
         use_data = load_counterfact_dataset(args)
@@ -548,7 +548,6 @@ if __name__ == "__main__":
             results_dfs.append(results_df)
 
     all_results_df = pd.concat(results_dfs)
-    ovr_exp_name = f"{_model_name}_{args.ds_name}_k{k}_sd{RANDOM_SEED}_tracing_sweep_n{args.dataset_size_limit}"
     save_path = f'{BASE_DIR}/results/{ovr_exp_name}.csv'
     results_df.to_csv(save_path, index=False)
     # upload results csv to google bucket
