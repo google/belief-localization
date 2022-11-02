@@ -378,6 +378,7 @@ def calculate_hidden_flow(
     batch_size = (samples+1)
     batch = make_inputs(mt.tokenizer, prompts=[prompt] * batch_size, targets=[answer] * batch_size)
     e_range = find_token_range(mt.tokenizer, substring=subject, prompt_str=prompt)
+    import pdb; pdb.set_trace()
     low_score, _ = trace_with_patch(mt.model, batch, [], pred_id, tokens_to_mix=e_range, noise=noise)
     if not kind:
         differences = trace_important_states(
