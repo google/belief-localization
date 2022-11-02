@@ -419,6 +419,7 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
   })
   # make metadata for df
   print("Done! Runtime: ", format_time(time.time()-start))
+  import pdb; pdb.set_trace()
   return results_df, metadata_df
 
 
