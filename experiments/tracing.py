@@ -529,6 +529,7 @@ if __name__ == "__main__":
         max_decode_steps=24
     else:
         noise_sd = .01
+        max_decode_steps=36
 
     results_dfs = []
     for window_size in window_sizes:
