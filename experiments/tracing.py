@@ -491,10 +491,10 @@ if __name__ == "__main__":
                                                         },
                                                         low_cpu_mem_usage=False,
                                                         torch_dtype=torch_dtype)
-        torch.cuda.empty_cache()
-        model.eval().cuda()
-        tokenizer = GPTNeoXTokenizerFast.from_pretrained("EleutherAI/gpt-neox-20b")
-        mt = ModelAndTokenizer(model=model, tokenizer=tokenizer, torch_dtype=torch_dtype)
+            torch.cuda.empty_cache()
+            model.eval().cuda()
+            tokenizer = GPTNeoXTokenizerFast.from_pretrained("EleutherAI/gpt-neox-20b")
+            mt = ModelAndTokenizer(model=model, tokenizer=tokenizer, torch_dtype=torch_dtype)
 
         _model_name = os.path.split(model_name)[-1]
         os.makedirs(f'{BASE_DIR}/results/{_model_name}', exist_ok=True)    
