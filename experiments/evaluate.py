@@ -122,6 +122,8 @@ def sweep_experiment_name(args, model_name, alg_name, ds_name, sweep_params):
     obj = '_fact-forcing'
   elif args.fact_erasure:
     obj = '_fact-erasure'
+  elif args.fact_amplification:
+    obj = '_fact-amplification'
   elif args.weight_based_tracing:
     obj = '_weight-tracing'
   return f'{exp_name}{obj}_n{args.dataset_size_limit}'
@@ -134,6 +136,8 @@ def ROME_experiment_name(args, model_name, alg_name, ds_name, hparams_to_add):
     hparams_to_add['fact-forcing'] = 'T'
   if args.fact_erasure:
     hparams_to_add['erase'] = 'T'
+  if args.fact_amplification:
+    hparams_to_add['ampfy'] = 'T'
   if args.weight_based_tracing:
     hparams_to_add['weight-based'] = 'T'
   for k,v in hparams_to_add.items():
@@ -437,6 +441,9 @@ def main(
                 batch = make_inputs(mt.tokenizer, prompts=[prompt] * num_noise_samples, targets=[target_true] * num_noise_samples)
                 prior_prob = corrupted_forward_pass(mt.model, batch, None, tokens_to_mix=e_range, noise=hparams.editing_noise)
                 prior_prob = prior_prob.item()
+                request['request_baseline'] = mt.tokenizer.eos_token # arbitrary token, won't use these metrics anyway
+                request['target_new'] = request['target_true']
+            elif args.fact_amplification:
                 request['request_baseline'] = mt.tokenizer.eos_token # arbitrary token, won't use these metrics anyway
                 request['target_new'] = request['target_true']
             elif args.fact_forcing or args.weight_based_tracing:

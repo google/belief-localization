@@ -152,13 +152,14 @@ def execute_ft(
             last_token_logits = outputs.logits[torch.arange(bs), last_token_inds]
 
             # compute loss based on objective
-            if not args.weight_based_tracing:
-                logprobs = torch.nn.functional.log_softmax(last_token_logits, dim=-1)
-                loss = -(torch.gather(logprobs, 1, target_ids) * loss_mask).sum(1) / loss_mask.sum(1)
-            if args.fact_erasure:
-                pred_prob = torch.exp(-loss)
+            logprobs = torch.nn.functional.log_softmax(last_token_logits, dim=-1)
+            nll = -(torch.gather(logprobs, 1, target_ids) * loss_mask).sum(1) / loss_mask.sum(1)
+            if not (args.fact_erasure or args.weight_based_tracing):
+                loss = nll    
+            elif args.fact_erasure:
+                pred_prob = torch.exp(-nll)
                 loss = torch.abs(pred_prob - prior_prob) 
-            if args.weight_based_tracing:
+            elif args.weight_based_tracing:
                 # supervision will be of shape [n_layers, num_noise_samples, seq_len, hidden_dim]
                 hidden_states = outputs.hidden_states
                 hidden_states = torch.stack([hidden_states[layer+1] for layer in hparams.layers], dim=0)
