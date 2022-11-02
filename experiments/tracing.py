@@ -419,7 +419,6 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
   })
   # make metadata for df
   print("Done! Runtime: ", format_time(time.time()-start))
-  import pdb; pdb.set_trace()
   return results_df, metadata_df
 
 
@@ -556,8 +555,7 @@ if __name__ == "__main__":
                                         template_id=template_id, 
                                         print_examples=10,
                                         overwrite=False)
-        else:    
-            results_df = make_results_df(_model_name, exp_name, count=eval_size)
+        results_df = make_results_df(_model_name, exp_name, count=eval_size)
         results_df['trace_window_size'] = window_size
         results_dfs.append(results_df)
 
