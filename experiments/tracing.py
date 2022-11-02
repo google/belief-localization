@@ -557,7 +557,7 @@ if __name__ == "__main__":
                                         template_id=template_id, 
                                         print_examples=10,
                                         overwrite=False)
-        results_df = make_results_df(_model_name, exp_name, count=eval_size)
+        results_df = make_results_df(_model_name, exp_name, count=args.dataset_size_limit)
         results_df['trace_window_size'] = window_size
         results_dfs.append(results_df)
 
