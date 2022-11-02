@@ -564,6 +564,7 @@ if __name__ == "__main__":
 
     all_results_df = pd.concat(results_dfs)
     save_path = f'{BASE_DIR}/results/{ovr_exp_name}.csv'
+    print(f"Saving results at {save_path}")
     results_df.to_csv(save_path, index=False)
     # upload results csv to google bucket
     storage_client = storage.Client()
