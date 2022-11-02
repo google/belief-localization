@@ -204,7 +204,7 @@ def make_results_df(model_name, exp_name, count=1208):
         read_count += 1
         all_data_points.append(data)
       else:
-        print(f"skipping point {path}")
+        print(f"skipping reading point {path}")
   results_df = pd.concat([result_df for result_df in all_data_points])  
   return results_df
 
@@ -292,6 +292,7 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
   causal_tracing_results = []
   skipped = 0
   for batch_num, batch in enumerate(np.array_split(eval_data_loop, n_chunks)):
+    import pdb; pdb.set_trace()
     data_point_id = batch.index[0]
     # format data
     input = batch.input.item()
@@ -364,8 +365,6 @@ def causal_tracing_loop(experiment_name, task_name, split_name, mt, eval_data,
         if diff < min_corruption_effect:
           print(f"skipping batch {batch_num}, point {data_point_id}, with too small a corruption effect of {diff:.3f}")
           continue
-      else:
-        continue
 
     kinds = [restore_module] if restore_module!=None else [None, "mlp", "attn"]
     for kind in kinds:
@@ -556,7 +555,7 @@ if __name__ == "__main__":
                                         prompt_data=prompt_ex,
                                         template_id=template_id, 
                                         print_examples=10,
-                                        overwrite=False)
+                                        overwrite=args.overwrite)
         results_df = make_results_df(_model_name, exp_name, count=args.dataset_size_limit)
         results_df['trace_window_size'] = window_size
         results_dfs.append(results_df)
