@@ -58,17 +58,16 @@ def load_counterfact_dataset(args):
         rewrite_data = record['requested_rewrite']
         prompt = rewrite_data['prompt'].format(rewrite_data['subject'])
         target = rewrite_data['target_true']['str']
-    if generate_completions:
-        completion, _, _ = predict_model(mt, [prompt], max_decode_steps=10)
-        completion = completion[0]
-        print(prompt, " -- ", completion)
-    else:
-        completion = ''
-    knowledge_inputs.append(prompt)
-    knowledge_targets.append(target)
-    gpt_completions.append(completion)
-    subjects.append(rewrite_data['subject'])
-
+        if generate_completions:
+            completion, _, _ = predict_model(mt, [prompt], max_decode_steps=10)
+            completion = completion[0]
+            print(prompt, " -- ", completion)
+        else:
+            completion = ''
+        knowledge_inputs.append(prompt)
+        knowledge_targets.append(target)
+        gpt_completions.append(completion)
+        subjects.append(rewrite_data['subject'])
     counterfact_data = pd.DataFrame({'input': knowledge_inputs, 
                                 'label_str': knowledge_targets,
                                 'completion': gpt_completions,
@@ -293,7 +292,6 @@ def causal_tracing_loop(experiment_name, task_name, split_name, model_name, mt, 
   causal_tracing_results = []
   skipped = 0
   for batch_num, batch in enumerate(np.array_split(eval_data_loop, n_chunks)):
-    import pdb; pdb.set_trace()
     data_point_id = batch.index[0]
     # format data
     input = batch.input.item()
