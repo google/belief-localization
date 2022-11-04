@@ -139,25 +139,32 @@ def execute_ft(
             chunks(texts, hparams.batch_size), chunks(targets, hparams.batch_size)
         ):
             # batch forward pass
-            import pdb; pdb.set_trace()
-            batch = make_inputs(tok, [txt], [tgt])
+            batch = make_inputs(tok, txt, tgt)
+            batch = {k: v.repeat(repeat_input,1) for k,v in batch.items()}
             if not args.weight_based_tracing:
                 seq_log_probs = score_from_batch(model, batch, return_log_probs=True)
                 nll = -seq_log_probs.sum()
-                pred_prob = torch.exp(-nll)              
+                pred_prob = torch.exp(-nll)
+                
+            if args.weight_based_tracing:
+                batch['output_hidden_states'] = True
 
             opt.zero_grad()
-            bs = batch["input_ids"].shape[0]
+            bs = inputs["input_ids"].shape[0]
             
             # compute loss based on objective
             if not (args.fact_erasure or args.weight_based_tracing):
                 loss = nll    
             elif args.fact_erasure:
                 loss = pred_prob
-                # loss = torch.abs(pred_prob - prior_prob) 
             elif args.weight_based_tracing:
-                batch['output_hidden_states'] = True
-                outputs = model(**batch)
+                inputs = tok(txt, return_tensors="pt", padding=True).to("cuda")
+                target_ids = tok(tgt, return_tensors="pt", padding=True)["input_ids"].to("cuda")
+                inputs = {k: v.repeat(repeat_input,1) for k,v in inputs.items()}
+                target_ids = target_ids.repeat(repeat_input,1)
+                last_token_inds = inputs["attention_mask"].sum(dim=1) - 1
+                loss_mask = target_ids != tok.unk_token_id    
+                outputs = model(**inputs)
                 last_token_logits = outputs.logits[torch.arange(bs), last_token_inds]
                 # supervision will be of shape [n_layers, num_noise_samples, seq_len, hidden_dim]
                 hidden_states = outputs.hidden_states
