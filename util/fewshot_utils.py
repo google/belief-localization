@@ -26,8 +26,6 @@ def make_inputs(tokenizer, prompts, targets=None, device="cuda"):
         pad_id = 0
     if targets is None:
       maxlen = max(len(t) for t in token_lists)
-    #   input_ids = [[pad_id] * (maxlen - len(t)) + t for t in token_lists]
-    #   attention_mask = [[0] * (maxlen - len(t)) + [1] * len(t) for t in token_lists]
       input_ids = [t + [pad_id] * (maxlen - len(t)) for t in token_lists]
       attention_mask = [[1] * len(t) + [0] * (maxlen - len(t)) for t in token_lists]
       return dict(
@@ -46,12 +44,6 @@ def make_inputs(tokenizer, prompts, targets=None, device="cuda"):
       for input_ids_i, target_ids_i in zip(token_lists, target_lists):
           target_indicators_i = [0]*len(input_ids_i) + [1]*len(target_ids_i) + [0]*(maxlen - len(input_ids_i)-len(target_ids_i))
           target_indicators.append(target_indicators_i)
-      #   target_indicators = [[0]*len(input_ids_i) + [1]*len(t) + [0]*(maxlen-len(query_ids)) for t in target_lists]
-    #   query_ids = [[pad_id] * (maxlen - len(t)) + t for t in token_lists]
-    #   input_ids = [[pad_id] * (maxlen - len(t)) + t for t in combine_lists]
-    #   target_ids = [[pad_id] * (maxlen - len(t)) + t for t in target_lists]
-    #   target_indicators = [[0] * (maxlen - len(t)) + [1] * len(t) for t in target_lists]
-    #   attention_mask = [[0] * (maxlen - len(t)) + [1] * len(t) for t in combine_lists]
       return dict(
           input_ids=torch.tensor(input_ids).to(device),
           query_ids=torch.tensor(query_ids).to(device),
@@ -73,7 +65,6 @@ def score_from_batch(model, batch, return_log_probs=False):
       'input_ids' : batch['input_ids'],
       'attention_mask' : batch['attention_mask']
   }
-  import pdb; pdb.set_trace()
   target_tokens = batch['target_ids']
   target_mask = batch['target_indicators']
   logits = model(**model_batch).logits

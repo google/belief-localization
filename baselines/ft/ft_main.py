@@ -232,14 +232,6 @@ def execute_ft(
 
     print(f"Deltas successfully computed for {list(weights.keys())}")
 
-    print("after optimization ")
-    print(txt)
-    print(tgt)
-    print(pred_prob)
-    print(batch['input_ids'])
-    print(batch['target_indicators'])
-    import pdb; pdb.set_trace()
-
     return deltas
 
 
