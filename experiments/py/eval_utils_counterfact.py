@@ -163,6 +163,9 @@ def test_batch_prediction(
     print(prefixes[0])
     print(targets[0])
     print(torch.exp(-nll[0]))
+    print(batch['input_ids'][0])
+    print(batch['target_indicators'][0])
+    import pdb; pdb.set_trace()
 
     # prefix_lens = [len(n) for n in tok(prefixes)["input_ids"]]
     # prompt_tok = tok(

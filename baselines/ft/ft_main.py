@@ -236,6 +236,9 @@ def execute_ft(
     print(txt)
     print(tgt)
     print(pred_prob)
+    print(batch['input_ids'])
+    print(batch['target_indicators'])
+    import pdb; pdb.set_trace()
 
     return deltas
 
