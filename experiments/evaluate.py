@@ -211,9 +211,9 @@ def make_editing_results_df(exp_name, n=1000):
             cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
             print("post prob: ", round(post_prob,4), " pre_prob: ", round(pre_prob,4))
-            print(round(abs_diff),4)
-            print(round(max_abs_diff),4)
-            print(round(abs_diff / max_abs_diff), 4)
+            print(round(abs_diff,4))
+            print(round(max_abs_diff,4))
+            print(round(abs_diff / max_abs_diff, 4))
             cur_sum[f'{data_type}_score'] = abs_diff / max_abs_diff
     cur_sum["target_score"] = hmean([
         cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
