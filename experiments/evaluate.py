@@ -408,8 +408,9 @@ def main(
                 if not (is_correct and meets_target_prob):
                     if verbose:
                         print(" Skipping this point due to it being incorrect or not meeting the minimum target prob.")
-                        if target_prob_check > 0: print(f" Target prob: {scores[0].item():.4f}")
-                        if correctness_check:     print(f" Pred: {preds}")
+                        if target_prob_check > 0: 
+                            print(f" Target prob: {scores[0].item():.4f}")
+                            print(f" Pred: {preds}")
                     continue
 
             # generate essence_texts for evaluation if needed
@@ -681,8 +682,17 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
+    parser.add_argument(
+        "--gpu",
+        type=str,
+        default="0",
+    )
     parser.set_defaults(skip_generation_tests=True, conserve_memory=True)
     args = parser.parse_args()
+
+    # set device
+    device = torch.device(f"cuda:{args.gpu}")
+    torch.cuda.set_device(device)
 
     # experiment checks
     if args.fact_erasure:
