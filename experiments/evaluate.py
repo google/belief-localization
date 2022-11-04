@@ -210,13 +210,14 @@ def make_editing_results_df(exp_name, n=1000):
         if data_type != 'neighborhood':
             cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
+            print("post prob: ", round(post_prob,4), " pre_prob: ", round(pre_prob,4))
+            print(round(abs_diff),4)
+            print(round(max_abs_diff),4)
+            print(round(abs_diff / max_abs_diff), 4)
             cur_sum[f'{data_type}_score'] = abs_diff / max_abs_diff
-    try:
-        cur_sum["target_score"] = hmean([
-            cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
-        ])
-    except:
-        import pdb; pdb.set_trace()
+    cur_sum["target_score"] = hmean([
+        cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
+    ])
     # compute essence scores 
     if 'essence_score' in data["post"]:
         cur_sum[f"post_essence_ppl"] = data["post"]['essence_score']
@@ -785,7 +786,7 @@ if __name__ == "__main__":
     blob.upload_from_filename(save_path)
 
     print(f"saving csv at {save_path}...")
-    metrics = ['rewrite_prob_diff', 'rewrite_score', 'paraphrase_prob_diff', 'paraphrase_score', 'neighborhood_prob_diff', 'neighborhood_score']
+    metrics = ['rewrite_prob_diff', 'rewrite_post_prob', 'rewrite_score', 'paraphrase_prob_diff', 'paraphrase_post_prob', 'paraphrase_score', 'neighborhood_prob_diff', 'neighborhood_score']
     # metrics = ['rewrite_score', 'paraphrase_score', 'neighborhood_score', 'target_score']
     # if args.fact_erasure or args.fact_amplification or args.fact_forcing or args.weight_based_tracing:
     #     metrics = ['rewrite_prob_diff', 'paraphrase_prob_diff', 'neighborhood_prob_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
