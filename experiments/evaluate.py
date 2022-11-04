@@ -77,6 +77,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
             return_dict['norm_constraint'] = args.norm_constraint
         elif args.tracing_reversal:
             return_dict['norm_constraint'] = args.norm_constraint
+            return_dict['num_steps'] = 50
         else:
             return_dict['norm_constraint'] = args.norm_constraint
   # hack for applying ROME to multiple 3 layers
