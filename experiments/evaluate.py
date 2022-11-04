@@ -73,8 +73,12 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
             return_dict['norm_constraint'] = 5e-5
         if args.fact_amplification:
             return_dict['norm_constraint'] = 5e-5
+        elif args.fact_forcing:
+            return_dict['norm_constraint'] = args.norm_constraint
+        elif args.tracing_reversal:
+            return_dict['norm_constraint'] = args.norm_constraint
         else:
-            return_dict['norm_constraint'] = 1e-4
+            return_dict['norm_constraint'] = args.norm_constraint
   # hack for applying ROME to multiple 3 layers
   elif window_size == 3 and alg_name == 'ROME':
     # budget the window size so that we're never editing fewer than three layers
@@ -614,6 +618,12 @@ if __name__ == "__main__":
         type=int,
         default=1000,
         help="Truncate CounterFact to first n records.",
+    )
+    parser.add_argument(
+        "--norm_constraint",
+        type=float,
+        default=1e-4,
+        help="l0 norm constraint on constrained finetuning",
     )
     parser.add_argument(
         "--overwrite",
