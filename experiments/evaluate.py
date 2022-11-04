@@ -77,9 +77,8 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
             return_dict['norm_constraint'] = 1e-4
         elif args.tracing_reversal:
             return_dict['norm_constraint'] = 1e-3
-            # return_dict['num_steps'] = 25
         else:
-            return_dict['norm_constraint'] = args.norm_constraint
+            return_dict['norm_constraint'] = 5e-5
   # hack for applying ROME to multiple 3 layers
   elif window_size == 3 and alg_name == 'ROME':
     # budget the window size so that we're never editing fewer than three layers
@@ -220,8 +219,12 @@ def make_editing_results_df(exp_name, n=1000):
         cur_sum[f'{data_type}_erased'] = erased_prop
         max_abs_diff = np.abs(pre_prob - .5) + .5
         if data_type == 'rewrite':
+            print(data_type)
             print(" post prob: ", round(post_prob, 4), " pre prob: ", round(pre_prob, 4))
-            print(" recovered: ", round(recovered_prop, 4))
+            print("   recovered: ", round(recovered_prop, 4))
+        if data_type == 'paraphrase':
+            print(" post prob: ", round(post_prob, 4), " pre prob: ", round(pre_prob, 4))
+            print("   recovered: ", round(recovered_prop, 4))
         if data_type != 'neighborhood':
             cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
