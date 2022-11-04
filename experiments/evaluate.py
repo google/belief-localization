@@ -94,12 +94,12 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
         ))
     return_dict = {'layers' : layers}
     if alg_name == "FT":
-      return_dict['norm_constraint'] = 1e-5 
+      return_dict['norm_constraint'] = 1e-5
   # method specific parameters
   # decrease weight norm constraint if doing fact erasure
   if args.fact_erasure:
       if alg_name == "FT":
-          return_dict['norm_constraint'] = 1e-5
+          return_dict['norm_constraint'] = 1e-3
   # increase number of steps if noising the subject
   if args.fact_forcing:
     if alg_name == "FT":
