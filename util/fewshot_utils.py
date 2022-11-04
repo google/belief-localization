@@ -16,6 +16,7 @@ def simple_make_inputs(tokenizer, prompts, device="cuda"):
     )
 
 def make_inputs(tokenizer, prompts, targets=None, device="cuda"):
+    # make tensor inputs for pytorch model with right-padding
     token_lists = [tokenizer.encode(p) for p in prompts]
     if "[PAD]" in tokenizer.all_special_tokens:
         pad_id = tokenizer.all_special_ids[tokenizer.all_special_tokens.index("[PAD]")]
@@ -42,8 +43,8 @@ def make_inputs(tokenizer, prompts, targets=None, device="cuda"):
       target_ids = [t + [pad_id] * (maxlen - len(t)) for t in target_lists]
       attention_mask = [[1] * len(t) + [0] * (maxlen - len(t)) for t in combine_lists]
       target_indicators = []
-      for input_ids_i, target_ids_i in zip(input_ids, target_ids):
-          target_indicators_i = [0]*len(input_ids_i) + [1]*len(target_ids_i) + [0] * (maxlen - len(input_ids_i)-len(target_ids_i))
+      for input_ids_i, target_ids_i in zip(token_lists, target_lists):
+          target_indicators_i = [0]*len(input_ids_i) + [1]*len(target_ids_i) + [0]*(maxlen - len(input_ids_i)-len(target_ids_i))
           target_indicators.append(target_indicators_i)
       #   target_indicators = [[0]*len(input_ids_i) + [1]*len(t) + [0]*(maxlen-len(query_ids)) for t in target_lists]
     #   query_ids = [[pad_id] * (maxlen - len(t)) + t for t in token_lists]
@@ -72,6 +73,7 @@ def score_from_batch(model, batch, return_log_probs=False):
       'input_ids' : batch['input_ids'],
       'attention_mask' : batch['attention_mask']
   }
+  import pdb; pdb.set_trace()
   target_tokens = batch['target_ids']
   target_mask = batch['target_indicators']
   logits = model(**model_batch).logits
