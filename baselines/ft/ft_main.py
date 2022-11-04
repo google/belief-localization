@@ -157,8 +157,8 @@ def execute_ft(
             if not (args.fact_erasure or args.weight_based_tracing):
                 loss = nll    
             elif args.fact_erasure:
-                loss = -nll
                 pred_prob = torch.exp(-nll)
+                loss = pred_prob
                 # loss = torch.abs(pred_prob - prior_prob) 
             elif args.weight_based_tracing:
                 # supervision will be of shape [n_layers, num_noise_samples, seq_len, hidden_dim]
