@@ -393,7 +393,7 @@ def main(
 
             # check if we should skip based on correctness and probability checks
             if correctness_check or target_prob_check > 0:
-                eval_this_point = 0
+                is_correct, meets_target_prob = True, True
                 if correctness_check:
                     gen_batch = simple_make_inputs(tok, prompts=[prompt])
                     samples, scores, _ = predict_model(mt, 
