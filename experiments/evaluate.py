@@ -217,8 +217,9 @@ def make_editing_results_df(exp_name, n=1000):
         cur_sum[f'{data_type}_recovered'] = recovered_prop
         cur_sum[f'{data_type}_erased'] = erased_prop
         max_abs_diff = np.abs(pre_prob - .5) + .5
-        print("post prob: ", round(post_prob, 4), " pre prob: ", round(pre_prob, 4))
-        print("recovered: ", round(recovered_prop, 4))
+        print(data_type)
+        print(" post prob: ", round(post_prob, 4), " pre prob: ", round(pre_prob, 4))
+        print(" recovered: ", round(recovered_prop, 4))
         if data_type != 'neighborhood':
             cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
@@ -544,7 +545,7 @@ def main(
                 if conserve_memory
                 else dict()
             )
-            with torch.enable_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing else nullcontext() as td:
+            with torch.enable_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings_f) if args.fact_forcing else nullcontext() as td:
               edited_model, weights_copy = apply_algo(
                   args,
                   model,
@@ -570,6 +571,7 @@ def main(
                     "time": exec_time,
                     "post": ds_eval_method(args, edited_model, tok, record, snips, vec, skip_generation_tests),
                 }
+                import pdb; pdb.set_trace()
                 for k, v in weights_copy.items():
                     nethook.get_parameter(model, k)[...] = v.to("cuda")
                 metrics["pre"] = ds_eval_method(args, model, tok, record, snips, vec, skip_generation_tests)
