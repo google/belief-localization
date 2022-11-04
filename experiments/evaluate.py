@@ -138,6 +138,8 @@ def sweep_experiment_name(args, model_name, alg_name, ds_name, sweep_params):
     obj = '_fact-amplification'
   elif args.weight_based_tracing:
     obj = '_weight-tracing'
+  else:
+    obj = ''
   return f'{exp_name}{obj}_n{args.dataset_size_limit}'
 
 def ROME_experiment_name(args, model_name, alg_name, ds_name, hparams_to_add):
