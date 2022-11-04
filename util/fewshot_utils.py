@@ -42,7 +42,7 @@ def pull_prompt_from_data(data, k):
   eval_data = data.iloc[eval_idx]
   return prompt_ex, eval_data
 
-def score_from_batch(model, batch):
+def score_from_batch(model, batch, return_log_probs=False):
   model_batch = {
       'input_ids' : batch['input_ids'],
       'attention_mask' : batch['attention_mask']
@@ -61,7 +61,10 @@ def score_from_batch(model, batch):
   # will sum up log probs, so zero out log_probs for non-target indices
   log_probs = target_mask * log_probs
   seq_log_probs = log_probs.sum(-1)
-  return torch.exp(seq_log_probs)
+  if return_log_probs:
+    return seq_log_probs
+  else:
+    return torch.exp(seq_log_probs)
 
 def score_model(mt, query_inputs, targets):
   batch = make_inputs(mt.tokenizer, query_inputs, targets)

@@ -7,6 +7,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from experiments.causal_trace import find_token_range, simple_make_inputs, corrupted_forward_pass
 from util import nethook
+from util.fewshot_utils import score_from_batch, make_inputs
 
 from .ft_hparams import FTHyperParams
 
@@ -137,30 +138,27 @@ def execute_ft(
         for txt, tgt in zip(
             chunks(texts, hparams.batch_size), chunks(targets, hparams.batch_size)
         ):
-            inputs = tok(txt, return_tensors="pt", padding=True).to("cuda")
-            target_ids = tok(tgt, return_tensors="pt", padding=True)["input_ids"].to("cuda")
-            inputs = {k: v.repeat(repeat_input,1) for k,v in inputs.items()}
-            target_ids = target_ids.repeat(repeat_input,1)
-            last_token_inds = inputs["attention_mask"].sum(dim=1) - 1
-            loss_mask = target_ids != tok.unk_token_id
-            if args.weight_based_tracing:
-                inputs['output_hidden_states'] = True
+            # batch forward pass
+            import pdb; pdb.set_trace()
+            batch = make_inputs(tok, [txt], [tgt])
+            if not args.weight_based_tracing:
+                seq_log_probs = score_from_batch(model, batch, return_log_probs=True)
+                nll = -seq_log_probs.sum()
+                pred_prob = torch.exp(-nll)              
 
             opt.zero_grad()
-            bs = inputs["input_ids"].shape[0]
-            outputs = model(**inputs)
-            last_token_logits = outputs.logits[torch.arange(bs), last_token_inds]
-
+            bs = batch["input_ids"].shape[0]
+            
             # compute loss based on objective
-            logprobs = torch.nn.functional.log_softmax(last_token_logits, dim=-1)
-            nll = -(torch.gather(logprobs, -1, target_ids.unsqueeze(-1)).squeeze(-1) * loss_mask).sum(1) / loss_mask.sum(1)
-            pred_prob = torch.exp(-nll)
             if not (args.fact_erasure or args.weight_based_tracing):
                 loss = nll    
             elif args.fact_erasure:
                 loss = pred_prob
                 # loss = torch.abs(pred_prob - prior_prob) 
             elif args.weight_based_tracing:
+                batch['output_hidden_states'] = True
+                outputs = model(**batch)
+                last_token_logits = outputs.logits[torch.arange(bs), last_token_inds]
                 # supervision will be of shape [n_layers, num_noise_samples, seq_len, hidden_dim]
                 hidden_states = outputs.hidden_states
                 hidden_states = torch.stack([hidden_states[layer+1] for layer in hparams.layers], dim=0)
