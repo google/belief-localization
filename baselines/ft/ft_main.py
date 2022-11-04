@@ -154,7 +154,7 @@ def execute_ft(
             
             # compute loss based on objective
             if not (args.fact_erasure or args.weight_based_tracing):
-                loss = nll    
+                loss = nll
             elif args.fact_erasure:
                 loss = pred_prob
             elif args.weight_based_tracing:
@@ -209,14 +209,12 @@ def execute_ft(
         # print loss
         if args.fact_erasure:
             print_addendum = "" # f"| (pred prob: {pred_prob[0].item():.4f})"
-        elif args.fact_amplification:
-            print_addendum = f"| (pred prob: {pred_prob[0].item():.4f})"
         elif args.weight_based_tracing:
             # * indicates is subject token
             star_str = "*"; empty_str = ""
             print_addendum = "| " + ' '.join([f" {tok_idx}{star_str if tok_idx in range(*e_range) else empty_str}: {tok_loss:.5f}" for tok_idx, tok_loss in enumerate(per_tok_loss.tolist())])
         else:
-            print_addendum = ""
+            print_addendum = f"| (pred prob: {pred_prob[0].item():.4f})"
         print(f"Total loss at epoch {it}: {loss_meter.avg:.4f} ", print_addendum)
 
         if not args.fact_erasure:
