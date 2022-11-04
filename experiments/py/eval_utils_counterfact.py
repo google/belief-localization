@@ -157,10 +157,11 @@ def test_batch_prediction(
     repeated_prefixes = list(itertools.chain(*[[prefix, prefix] for prefix in prefixes]))
     batch = make_inputs(tok, repeated_prefixes, targets)
     with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing or args.weight_based_tracing else nullcontext():
+        import pdb; pdb.set_trace()
         results = score_from_batch(model, batch, return_log_probs=True)
         nll = -results
     print("in eval: ")
-    print(prefixes[3])
+    print(repeated_prefixes[3])
     print(targets[3])
     print(torch.exp(-nll[3]))
     print(batch['input_ids'][3])

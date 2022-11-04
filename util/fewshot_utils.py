@@ -38,12 +38,14 @@ def make_inputs(tokenizer, prompts, targets=None, device="cuda"):
       combine_lists = [p + t for p, t in zip(token_lists, target_lists)]
       query_ids = [t + [pad_id] * (maxlen - len(t)) for t in token_lists]
       input_ids = [t + [pad_id] * (maxlen - len(t)) for t in combine_lists]
-      target_ids = [t + [pad_id] * (maxlen - len(t)) for t in target_lists]
       attention_mask = [[1] * len(t) + [0] * (maxlen - len(t)) for t in combine_lists]
+      target_ids = []
       target_indicators = []
       for input_ids_i, target_ids_i in zip(token_lists, target_lists):
           target_indicators_i = [0]*len(input_ids_i) + [1]*len(target_ids_i) + [0]*(maxlen - len(input_ids_i)-len(target_ids_i))
           target_indicators.append(target_indicators_i)
+          target_ids_i = [pad_id]*len(input_ids_i) + target_ids_i + [pad_id]*(maxlen - len(input_ids_i)-len(target_ids_i))
+          target_ids.append(target_ids_i)
       return dict(
           input_ids=torch.tensor(input_ids).to(device),
           query_ids=torch.tensor(query_ids).to(device),
@@ -69,7 +71,6 @@ def score_from_batch(model, batch, return_log_probs=False):
   target_mask = batch['target_indicators']
   logits = model(**model_batch).logits
   log_probs = torch.log_softmax(logits, dim=-1)
-  log_probs = log_probs
   # align probs and target mask by cutting off one token idx from the ends
   log_probs = log_probs[:,:-1,:] # batch_size x seq_len x vocab_size
   target_tokens = target_tokens[:,1:] # batch_size x seq_len
