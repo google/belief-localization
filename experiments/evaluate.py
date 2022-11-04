@@ -310,6 +310,27 @@ def make_editing_results_df(exp_name, n=1000):
     return_df = pd.DataFrame()
   return return_df
 
+
+def get_subject_noising_function(model, e_range, hparams, embed_layername):
+    # define noise embeddings function
+    prng = np.random.RandomState(1) 
+    # define function that noises embeddings at tokens_to_mix indices
+    def noise_embeddings_f(x, layer):
+        # skip noising if seq is a single token (must be bos/eos for open-ended generation)
+        if (x.shape[1] == 1):
+            return x
+        if layer == embed_layername:
+            # If requested, we corrupt a range of token embeddings on batch items x[1:]
+            if e_range is not None:
+                b, e = e_range
+                embeds_noise = torch.from_numpy(prng.randn(x.shape[0], e - b, x.shape[2])).to(x.device)
+                x[:, b:e] += hparams.editing_noise * embeds_noise
+            # print("added noise to embeds: ", embeds_noise)
+            return x
+        else:
+            return x
+    return noise_embeddings_f
+
 def main(
     args,
     alg_name: str,
@@ -450,12 +471,25 @@ def main(
             e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
             request['e_range'] = e_range
             prior_prob = None
+            # make noise embeddings_f
+            embed_layername = layername(model, 0, 'embed')
+            noise_embeddings_f = get_subject_noising_function(model, e_range, hparams, embed_layername)
             if args.tracing_reversal:
                 gen_batch = simple_make_inputs(tok, prompts=[prompt] * (num_noise_samples))
-                _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise)
-                noised_pred_token = tok.decode([noised_pred_id])
+                import pdb; pdb.set_trace()
+                with torch.no_grad(), nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings_f) as td:
+                    essence_texts = generate_fast(
+                        model,
+                        tok,
+                        [prompt],
+                        n_gen_per_prompt=1,
+                        max_out_len=12,
+                    )
+                # noised_pred_tokens = tok.encode(essence_texts[0])
+                # _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise)
+                # noised_pred_token = tok.decode([noised_pred_id])
                 request['request_baseline'] = request['target_true']['str']
-                request['target_new']['str'] = noised_pred_token
+                request['target_new']['str'] = essence_texts[0]
                 request['target_new']['id'] = 'noised-input'
                 if verbose:
                     score_batch = make_inputs(tok, [prompt], targets=[noised_pred_token])
@@ -482,26 +516,6 @@ def main(
                 print(" request baseline: ", request['request_baseline'])
                 
             # get additional functions and variables based on objectives
-            # make noise_embeddings function for nethook contextmanager if noising the subject
-            if args.fact_forcing or args.weight_based_tracing:
-                # define noise embeddings function
-                prng = np.random.RandomState(1) 
-                embed_layername = layername(model, 0, 'embed')
-                # define function that noises embeddings at tokens_to_mix indices
-                def noise_embeddings(x, layer):
-                    # skip noising if seq is a single token (must be bos/eos for open-ended generation)
-                    if (x.shape[1] == 1):
-                        return x
-                    if layer == embed_layername:
-                        # If requested, we corrupt a range of token embeddings on batch items x[1:]
-                        if e_range is not None:
-                            b, e = e_range
-                            embeds_noise = torch.from_numpy(prng.randn(x.shape[0], e - b, x.shape[2])).to(x.device)
-                            x[:, b:e] += hparams.editing_noise * embeds_noise
-                        # print("added noise to embeds: ", embeds_noise)
-                        return x
-                    else:
-                        return x
             # get hidden representations from corrupted+uncorrupted forward passes to use as targets for weight editing
             if args.weight_based_tracing:
                 last_subj_idx = e_range[1]
