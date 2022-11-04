@@ -449,7 +449,6 @@ def main(
                 # essence_texts = snips.names_to_samples[subject]
                 # if subject == 'Inner Circle railway line':
                     # print("debug the condition below for Inner Circle railway line")
-                    # import pdb; pdb.set_trace()
                 # if len(essence_texts) == 0 or not all([subject in essence_text[:200] for essence_text in essence_texts]):
                 if verbose:
                     print("GENERATING ESSENCE TEXTS")
@@ -564,8 +563,7 @@ def main(
 
             # Execute evaluation suite
             start = time.time()
-            with torch.no_grad(): #, nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing else nullcontext() as td:
-                import pdb; pdb.set_trace()
+            with torch.no_grad(): 
                 metrics = {
                     "case_id": case_id,
                     "requested_rewrite": request,

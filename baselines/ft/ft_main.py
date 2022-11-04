@@ -90,9 +90,9 @@ def execute_ft(
     # Update target and print info
     requests = deepcopy(requests)
     for request in requests:
-        if request["target_new"]["str"][0] != " ":
+        # if request["target_new"]["str"][0] != " ":
             # Space required for correct tokenization
-            request["target_new"]["str"] = " " + request["target_new"]["str"]
+            # request["target_new"]["str"] = " " + request["target_new"]["str"]
         print(
             f"Executing FT algo for: "
             f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
@@ -158,13 +158,14 @@ def execute_ft(
             elif args.fact_erasure:
                 loss = pred_prob
             elif args.weight_based_tracing:
-                inputs = tok(txt, return_tensors="pt", padding=True).to("cuda")
-                target_ids = tok(tgt, return_tensors="pt", padding=True)["input_ids"].to("cuda")
-                inputs = {k: v.repeat(repeat_input,1) for k,v in inputs.items()}
-                target_ids = target_ids.repeat(repeat_input,1)
-                last_token_inds = inputs["attention_mask"].sum(dim=1) - 1
+                # inputs = tok(txt, return_tensors="pt", padding=True).to("cuda")
+                # target_ids = tok(tgt, return_tensors="pt", padding=True)["input_ids"].to("cuda")
+                # inputs = {k: v.repeat(repeat_input,1) for k,v in inputs.items()}
+                batch = simple_make_inputs(tok, txt, tgt)
+                batch = {k: v.repeat(repeat_input,1) for k,v in batch.items()}
+                # last_token_inds = batch["attention_mask"].sum(dim=1) - 1
                 # loss_mask = target_ids != tok.unk_token_id    
-                outputs = model(**inputs)
+                outputs = model(**batch)
                 # last_token_logits = outputs.logits[torch.arange(bs), last_token_inds]
                 # supervision will be of shape [n_layers, num_noise_samples, seq_len, hidden_dim]
                 hidden_states = outputs.hidden_states

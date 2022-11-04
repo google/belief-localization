@@ -153,16 +153,11 @@ def test_batch_prediction(
     # inputs are inteleaved in order. so prefixes are [rewrite, paraphrase, neighbor, attribute]
     # new target is first, then baseline is second for each prefix
     # double up each prefix after making targets
-    import pdb; pdb.set_trace()
     targets = [target_new, request_baseline] * len(prefixes)
     repeated_prefixes = list(itertools.chain(*[[prefix, prefix] for prefix in prefixes]))
     batch = make_inputs(tok, repeated_prefixes, targets)
     with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing or args.weight_based_tracing else nullcontext():
         results = score_from_batch(model, batch, return_log_probs=True)
-    print("at eval: ")
-    print(repeated_prefixes[0])
-    print(targets[0])
-    print(np.exp(results[0]))
 
     # prefix_lens = [len(n) for n in tok(prefixes)["input_ids"]]
     # prompt_tok = tok(
