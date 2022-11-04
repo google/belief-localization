@@ -67,8 +67,12 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
   # window size 1 approach
   elif window_size == 1:
     return_dict = {'layers' : [central_layer]}
+    # weight norm constraints for each method
     if alg_name == "FT":
-      return_dict['norm_constraint'] = 1e-4
+        if args.fact_erasure:
+            return_dict['norm_constraint'] = 5e-5
+        else:
+            return_dict['norm_constraint'] = 1e-4
   # hack for applying ROME to multiple 3 layers
   elif window_size == 3 and alg_name == 'ROME':
     # budget the window size so that we're never editing fewer than three layers
@@ -96,10 +100,6 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     if alg_name == "FT":
       return_dict['norm_constraint'] = 1e-5
   # method specific parameters
-  # decrease weight norm constraint if doing fact erasure
-  if args.fact_erasure:
-      if alg_name == "FT":
-          return_dict['norm_constraint'] = 1e-5
   # increase number of steps if noising the subject
   if args.fact_forcing:
     if alg_name == "FT":
