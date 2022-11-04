@@ -199,12 +199,16 @@ def make_editing_results_df(exp_name, n=1000):
         cur_sum[f'{data_type}_prob_diff'] = post_prob - pre_prob
         cur_sum[f'{data_type}_pre_prob'] = pre_prob
         cur_sum[f'{data_type}_post_prob'] = post_prob
+        erased_prop = (pre_prob - post_prob) / pre_prob
+        recovered_prop = 1 - (1 - post_prob) / (1 - pre_prob)
+        abs_diff = np.abs(post_prob-pre_prob)
+        cur_sum[f'{data_type}_recovered'] = recovered_prop
+        cur_sum[f'{data_type}_erased'] = erased_prop
+        max_abs_diff = np.abs(pre_prob - .5) + .5
         if data_type != 'neighborhood':
-            cur_sum[f'{data_type}_recovered']
-            cur_sum[f'{data_type}_erased']
+            cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
-            cur_sum[f'{data_type}_loss'] = np.abs(post_prob-pre_prob)
-            cur_sum[f'{data_type}_loss']
+            cur_sum[f'{data_type}_score'] = abs_diff / max_abs_diff
     # compute essence scores 
     if 'essence_score' in data["post"]:
         cur_sum[f"post_essence_ppl"] = data["post"]['essence_score']
