@@ -144,7 +144,8 @@ def compute_v(
         )
         # weight_decay = hparams.v_weight_decay * torch.norm(delta) ** 2
         if args.fact_erasure:
-            loss = -nll_loss + kl_loss + weight_decay
+            pred_prob = torch.exp(-nll_loss)
+            loss = pred_prob + kl_loss + weight_decay
         else:
             loss = nll_loss + kl_loss + weight_decay
         print(
@@ -152,15 +153,16 @@ def compute_v(
             f"avg prob of [{request['target_new']['str']}] "
             f"{torch.exp(-nll_loss_each).mean().item()}"
         )
-        if loss < 5e-2:
-            patience_counter += 1
-            if patience_counter >= 5:
-                break
-            else:
-                patience_counter = 0
+        if not args.fact_erasure:
+            if loss < 5e-2:
+                patience_counter += 1
+                if patience_counter >= 5:
+                    break
+                else:
+                    patience_counter = 0
 
-        if it == hparams.v_num_grad_steps - 1:
-            break
+            if it == hparams.v_num_grad_steps - 1:
+                break
 
         # Backpropagate
         loss.backward()

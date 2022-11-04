@@ -393,7 +393,7 @@ def main(
                                             [prompt], 
                                             answers=None, 
                                             trigger_phrase=None, 
-                                            max_decode_steps=48)
+                                            max_decode_steps=36)
                     is_correct = fewshot_accuracy_sum(samples, [target_true])
                     eval_this_point += is_correct
                 if target_prob_check > 0:
@@ -672,8 +672,13 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
-    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=True)
+    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=True,
+                        correctness_filter=True)
     args = parser.parse_args()
+
+    # experiment checks
+    if args.erasure:
+        assert args.correctness_filter, "only erase known facts"
 
     # load model
     if args.run:
@@ -775,6 +780,7 @@ if __name__ == "__main__":
 
     print(f"saving csv at {save_path}...")
     metrics = ['rewrite_prob_diff', 'rewrite_score', 'paraphrase_prob_diff', 'paraphrase_score', 'neighborhood_prob_diff', 'neighborhood_score']
+    metrics = ['rewrite_score', 'paraphrase_score', 'neighborhood_score', 'target_score']
     # if args.fact_erasure or args.fact_amplification or args.fact_forcing or args.weight_based_tracing:
     #     metrics = ['rewrite_prob_diff', 'paraphrase_prob_diff', 'neighborhood_prob_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
     # else:

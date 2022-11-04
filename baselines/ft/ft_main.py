@@ -213,12 +213,13 @@ def execute_ft(
             print_addendum = ""
         print(f"Total loss at epoch {it}: {loss_meter.avg:.4f} ", print_addendum)
 
-        if loss_meter.avg < 1e-2:
-            patience_counter += 1
-            if patience_counter >= 5:
-                break
-        else:
-            patience_counter = 0
+        if not args.fact_erasure:
+            if loss_meter.avg < 1e-2:
+                patience_counter += 1
+                if patience_counter >= 5:
+                    break
+            else:
+                patience_counter = 0
 
     deltas = {k: (weights[k] - weights_copy[k]).detach() for k in weights}
 
