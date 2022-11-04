@@ -384,7 +384,7 @@ def main(
                     f"\n Paraphrases: {paraphrase_prompts[:2]}"
                     f"\n Neighbors: {neighborhood_prompts[:2]}")
 
-            # check if we should skip based on correctness or probability checks
+            # check if we should skip based on correctness and probability checks
             if correctness_check or target_prob_check > 0:
                 eval_this_point = 0
                 if correctness_check:
@@ -395,14 +395,12 @@ def main(
                                             trigger_phrase=None, 
                                             max_decode_steps=36)
                     is_correct = fewshot_accuracy_sum(samples, [target_true])
-                    eval_this_point += is_correct
                 if target_prob_check > 0:
                     preds, scores, _ = predict_model(mt, [prompt], answers=[target_true])
                     meets_target_prob = scores[0].item() > target_prob_check
-                    eval_this_point += meets_target_prob
-                if not eval_this_point > 0:
+                if not (is_correct and meets_target_prob):
                     if verbose:
-                        print(" Skipping this point due to it being incorrect and not meeting the minimum target prob.")
+                        print(" Skipping this point due to it being incorrect or not meeting the minimum target prob.")
                         if target_prob_check > 0: print(f" Target prob: {scores[0].item():.4f}")
                         if correctness_check:     print(f" Pred: {preds}")
                     continue
@@ -757,7 +755,7 @@ if __name__ == "__main__":
                     verbose=args.verbose,
                     overwrite=args.overwrite,
                     correctness_check=args.correctness_filter,
-                    target_prob_check=.1 if args.correctness_filter else 0
+                    target_prob_check=.02 if args.correctness_filter else 0
                 )
             # accumulate results
             exp_name = ROME_experiment_name_from_override_params(args, model_name, alg_name, ds_name, override_hparams, hparams_class)
