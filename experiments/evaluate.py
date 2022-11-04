@@ -140,7 +140,7 @@ def ROME_experiment_name(args, model_name, alg_name, ds_name, hparams_to_add):
   if args.fact_forcing:
     hparams_to_add['fact-forcing'] = 'T'
   if args.fact_erasure:
-    hparams_to_add['erase'] = 'T'
+    hparams_to_add['min'] = 'T'
   if args.fact_amplification:
     hparams_to_add['ampfy'] = 'T'
   if args.weight_based_tracing:
