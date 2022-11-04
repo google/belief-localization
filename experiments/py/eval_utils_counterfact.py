@@ -158,6 +158,7 @@ def test_batch_prediction(
     batch = make_inputs(tok, repeated_prefixes, targets)
     with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing or args.weight_based_tracing else nullcontext():
         results = score_from_batch(model, batch, return_log_probs=True)
+        nll = -results
 
     # prefix_lens = [len(n) for n in tok(prefixes)["input_ids"]]
     # prompt_tok = tok(
@@ -188,8 +189,8 @@ def test_batch_prediction(
     #     results[i] /= cur_len
 
     return [
-        {"target_new": results[i].item(), "request_baseline": results[i + 1].item()}
-        for i in range(0, len(results), 2)
+        {"target_new": nll[i].item(), "request_baseline": nll[i + 1].item()}
+        for i in range(0, len(nll), 2)
     ]
 
 

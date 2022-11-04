@@ -90,9 +90,6 @@ def execute_ft(
     # Update target and print info
     requests = deepcopy(requests)
     for request in requests:
-        # if request["target_new"]["str"][0] != " ":
-            # Space required for correct tokenization
-            # request["target_new"]["str"] = " " + request["target_new"]["str"]
         print(
             f"Executing FT algo for: "
             f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
