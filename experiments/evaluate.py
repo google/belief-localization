@@ -26,13 +26,13 @@ from dsets import (
     MENDQADataset,
     get_tfidf_vectorizer,
 )
-from experiments.causal_trace import ModelAndTokenizer, score_from_batch, predict_token
+from experiments.causal_trace import ModelAndTokenizer, predict_token
 from experiments.causal_trace import layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from rome import ROMEHyperParams, apply_rome_to_model
 from util import nethook
-from util.fewshot_utils import predict_model, fewshot_accuracy_sum
+from util.fewshot_utils import predict_model, fewshot_accuracy_sum, score_from_batch
 from util.generate import generate_fast
 from util.globals import *
 
