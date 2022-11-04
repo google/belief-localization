@@ -74,9 +74,9 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
         if args.fact_amplification:
             return_dict['norm_constraint'] = 5e-5
         elif args.fact_forcing:
-            return_dict['norm_constraint'] = args.norm_constraint
+            return_dict['norm_constraint'] = 1e-4
         elif args.tracing_reversal:
-            return_dict['norm_constraint'] = args.norm_constraint
+            return_dict['norm_constraint'] = 1e-3
             return_dict['num_steps'] = 50
         else:
             return_dict['norm_constraint'] = args.norm_constraint
@@ -715,12 +715,19 @@ if __name__ == "__main__":
         type=str,
         default="0",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+    )
     parser.set_defaults(skip_generation_tests=True, conserve_memory=True)
     args = parser.parse_args()
 
     # set device
     device = torch.device(f"cuda:{args.gpu}")
-    torch.cuda.set_device(device)
+    np.random.seed(args.seed)
+    torch.random.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
 
     # experiment checks
     if args.fact_erasure:
