@@ -94,6 +94,7 @@ def execute_rome(
     for layer in sorted(hparams.layers):
         # Compute rank-1 update matrix
         left_vector: torch.Tensor = compute_u(
+            args,
             model,
             tok,
             request,

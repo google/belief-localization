@@ -56,6 +56,7 @@ def get_inv_cov(
 
 
 def compute_u(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     request: Dict,

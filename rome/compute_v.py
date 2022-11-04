@@ -12,6 +12,7 @@ from .rome_hparams import ROMEHyperParams
 
 
 def compute_v(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     request: Dict,
@@ -142,7 +143,10 @@ def compute_v(
             torch.norm(delta) / torch.norm(target_init) ** 2
         )
         # weight_decay = hparams.v_weight_decay * torch.norm(delta) ** 2
-        loss = nll_loss + kl_loss + weight_decay
+        if args.fact_erasure:
+            loss = -nll_loss + kl_loss + weight_decay
+        else:
+            loss = nll_loss + kl_loss + weight_decay
         print(
             f"loss {np.round(loss.item(), 3)} = {np.round(nll_loss.item(), 3)} + {np.round(kl_loss.item(), 3)} + {np.round(weight_decay.item(), 3)} "
             f"avg prob of [{request['target_new']['str']}] "
