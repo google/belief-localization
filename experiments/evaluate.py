@@ -199,16 +199,19 @@ def make_editing_results_df(exp_name, n=1000):
         cur_sum[f'{data_type}_prob_diff'] = post_prob - pre_prob
         cur_sum[f'{data_type}_pre_prob'] = pre_prob
         cur_sum[f'{data_type}_post_prob'] = post_prob
-    # record erasure loss for fact erasure
-    if 'prior_prob' in data and data['prior_prob'] is not None:
-        cur_sum['erasure_loss'] = np.abs(cur_sum['rewrite_post_prob'] - data['prior_prob'])
-    else:
-        cur_sum['erasure_loss'] = 'NA'
-    # compute ROME metrics
+        if data_type != 'neighborhood':
+            cur_sum[f'{data_type}_recovered']
+            cur_sum[f'{data_type}_erased']
+        else:
+            cur_sum[f'{data_type}_loss'] = np.abs(post_prob-pre_prob)
+            cur_sum[f'{data_type}_loss']
+    # compute essence scores 
+    if 'essence_score' in data["post"]:
+        cur_sum[f"post_essence_ppl"] = data["post"]['essence_score']
+        cur_sum[f"pre_essence_ppl"] = data["pre"]['essence_score']
+        cur_sum['essence_ppl_diff'] = cur_sum['post_essence_ppl'] - cur_sum['pre_essence_ppl'] # lower is better
+    # compute original ROME metrics
     for prefix in ["pre", "post"]:
-        # record essence_drift metric
-        if 'essence_score' in data[prefix]:
-            cur_sum[f"{prefix}_essence_ppl"] = data[prefix]['essence_score']
         # Probability metrics for which new should be lower (better) than true
         for key in ["rewrite_prompts_probs", "paraphrase_prompts_probs"]:
             if prefix not in data or key not in data[prefix]:
@@ -277,9 +280,6 @@ def make_editing_results_df(exp_name, n=1000):
                                   cur_sum[k_generalization][0],
                                   cur_sum[k_specificity][0]]
                       )
-    # add post-pre ppl scores
-    if 'essence_score' in data['post']:
-        cur_sum['essence_ppl_diff'] = cur_sum['post_essence_ppl'] - cur_sum['pre_essence_ppl'] # lower is better
     # add ROME metrics to record_dict and append to dataframes
     record_dict.update(cur_sum)
     df = pd.DataFrame(record_dict)
