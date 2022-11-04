@@ -571,7 +571,7 @@ def main(
                     "time": exec_time,
                     "post": ds_eval_method(args, edited_model, tok, record, snips, vec, skip_generation_tests),
                 }
-                import pdb; pdb.set_trace()
+                # import pdb; pdb.set_trace()
                 for k, v in weights_copy.items():
                     nethook.get_parameter(model, k)[...] = v.to("cuda")
                 metrics["pre"] = ds_eval_method(args, model, tok, record, snips, vec, skip_generation_tests)
