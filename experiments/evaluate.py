@@ -200,7 +200,9 @@ def make_editing_results_df(exp_name, n=1000):
         cur_sum[f'{data_type}_pre_prob'] = pre_prob
         cur_sum[f'{data_type}_post_prob'] = post_prob
         erased_prop = (pre_prob - post_prob) / pre_prob
+        erased_prop = np.max(0, erased_prop)
         recovered_prop = 1 - (1 - post_prob) / (1 - pre_prob)
+        recovered_prop = np.max(0, recovered_prop)
         abs_diff = np.abs(post_prob-pre_prob)
         cur_sum[f'{data_type}_recovered'] = recovered_prop
         cur_sum[f'{data_type}_erased'] = erased_prop
@@ -209,9 +211,12 @@ def make_editing_results_df(exp_name, n=1000):
             cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
             cur_sum[f'{data_type}_score'] = abs_diff / max_abs_diff
-    cur_sum["target_score"] = hmean([
-        cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
-    ])
+    try:
+        cur_sum["target_score"] = hmean([
+            cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
+        ])
+    except:
+        import pdb; pdb.set_trace()
     # compute essence scores 
     if 'essence_score' in data["post"]:
         cur_sum[f"post_essence_ppl"] = data["post"]['essence_score']

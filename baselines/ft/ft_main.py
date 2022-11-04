@@ -203,7 +203,7 @@ def execute_ft(
                         )
         # print loss
         if args.fact_erasure:
-            print_addendum = f"| (pred prob: {pred_prob[0].item():.4f})"
+            print_addendum = "" # f"| (pred prob: {pred_prob[0].item():.4f})"
         elif args.weight_based_tracing:
             # * indicates is subject token
             star_str = "*"; empty_str = ""
