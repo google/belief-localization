@@ -178,10 +178,13 @@ def ROME_experiment_name_from_override_params(args, model_name, alg_name, ds_nam
 def make_editing_results_df(exp_name, n=1000):
   run_dir = os.path.join(f'{BASE_DIR}/results/', exp_name)
   dataframes = []
+  printed = 0
   for case_id in range(n):
     case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
     if not os.path.exists(case_result_path):
-      print("skipping ", case_result_path, " does not exist")
+      if printed < 10:
+        print("skipping ", case_result_path, " does not exist")
+        printed+=1
       continue
     with open(case_result_path, 'r') as f:
       record = json.load(f)
@@ -216,12 +219,7 @@ def make_editing_results_df(exp_name, n=1000):
         if data_type != 'neighborhood':
             cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
-            # print("post prob: ", round(post_prob,4), " pre_prob: ", round(pre_prob,4))
-            # print(round(abs_diff,4))
-            # print(round(max_abs_diff,4))
-            # print(round(abs_diff / max_abs_diff, 4))
             cur_sum[f'{data_type}_score'] = 1 - abs_diff / max_abs_diff
-    print(round(cur_sum['rewrite_score'], 4))
     cur_sum["target_score"] = hmean([
         cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
     ])
