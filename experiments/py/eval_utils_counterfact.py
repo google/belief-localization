@@ -18,6 +18,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from dsets import AttributeSnippets
 from experiments.causal_trace import layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs
 from util import nethook
+from util.fewshot_utils import make_inputs, score_from_batch
 from util.generate import generate_fast
 from util.perplexity import perplexity
 
