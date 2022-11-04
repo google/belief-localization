@@ -160,7 +160,7 @@ def execute_ft(
                 # inputs = {k: v.repeat(repeat_input,1) for k,v in inputs.items()}
                 batch = simple_make_inputs(tok, txt, tgt)
                 batch = {k: v.repeat(repeat_input,1) for k,v in batch.items()}
-                # last_token_inds = batch["attention_mask"].sum(dim=1) - 1
+                last_token_inds = batch["attention_mask"].sum(dim=1) - 1
                 # loss_mask = target_ids != tok.unk_token_id    
                 outputs = model(**batch)
                 # last_token_logits = outputs.logits[torch.arange(bs), last_token_inds]

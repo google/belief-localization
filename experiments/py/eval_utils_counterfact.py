@@ -159,6 +159,10 @@ def test_batch_prediction(
     with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing or args.weight_based_tracing else nullcontext():
         results = score_from_batch(model, batch, return_log_probs=True)
         nll = -results
+    print("in eval: ")
+    print(prefixes[0])
+    print(targets[0])
+    print(torch.exp(-nll[0]))
 
     # prefix_lens = [len(n) for n in tok(prefixes)["input_ids"]]
     # prompt_tok = tok(
