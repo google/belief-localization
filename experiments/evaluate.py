@@ -619,7 +619,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--do_essence_tests",
-        action="store_true",
+        type=int,
+        default=1,
+        choices=[0,1],
         help="Do the essence drift generation test regardless of args.skip_generation_tests",
     )
     parser.add_argument(
@@ -656,7 +658,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--correctness_filter",
-        action="store_true",
+        type=int,
+        default=1,
+        choices=[0,1],
         help="Only eval on points with correct generations or p(target_true) >= .1",
     )
     parser.add_argument(
@@ -672,12 +676,11 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
-    parser.set_defaults(skip_generation_tests=True, do_essence_tests=False, conserve_memory=True,
-                        correctness_filter=True)
+    parser.set_defaults(skip_generation_tests=True, conserve_memory=True)
     args = parser.parse_args()
 
     # experiment checks
-    if args.erasure:
+    if args.fact_erasure:
         assert args.correctness_filter, "only erase known facts"
 
     # load model
