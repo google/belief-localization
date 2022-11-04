@@ -25,8 +25,10 @@ def make_inputs(tokenizer, prompts, targets=None, device="cuda"):
         pad_id = 0
     if targets is None:
       maxlen = max(len(t) for t in token_lists)
-      input_ids = [[pad_id] * (maxlen - len(t)) + t for t in token_lists]
-      attention_mask = [[0] * (maxlen - len(t)) + [1] * len(t) for t in token_lists]
+    #   input_ids = [[pad_id] * (maxlen - len(t)) + t for t in token_lists]
+    #   attention_mask = [[0] * (maxlen - len(t)) + [1] * len(t) for t in token_lists]
+      input_ids = [t + [pad_id] * (maxlen - len(t)) for t in token_lists]
+      attention_mask = [[1] * len(t) + [0] * (maxlen - len(t)) for t in token_lists]
       return dict(
           input_ids=torch.tensor(input_ids).to(device),
           attention_mask=torch.tensor(attention_mask).to(device),
@@ -35,11 +37,20 @@ def make_inputs(tokenizer, prompts, targets=None, device="cuda"):
       target_lists = [tokenizer.encode(" " + t) for t in targets]
       maxlen = max(len(p) + len(t) for p, t in zip(token_lists, target_lists))
       combine_lists = [p + t for p, t in zip(token_lists, target_lists)]
-      query_ids = [[pad_id] * (maxlen - len(t)) + t for t in token_lists]
-      input_ids = [[pad_id] * (maxlen - len(t)) + t for t in combine_lists]
-      target_ids = [[pad_id] * (maxlen - len(t)) + t for t in target_lists]
-      target_indicators = [[0] * (maxlen - len(t)) + [1] * len(t) for t in target_lists]
-      attention_mask = [[0] * (maxlen - len(t)) + [1] * len(t) for t in combine_lists]
+      query_ids = [t + [pad_id] * (maxlen - len(t)) for t in token_lists]
+      input_ids = [t + [pad_id] * (maxlen - len(t)) for t in combine_lists]
+      target_ids = [t + [pad_id] * (maxlen - len(t)) for t in target_lists]
+      attention_mask = [[1] * len(t) + [0] * (maxlen - len(t)) for t in combine_lists]
+      target_indicators = []
+      for input_ids_i, target_ids_i in zip(input_ids, target_ids):
+          target_indicators_i = [0]*len(input_ids_i) + [1]*len(target_ids_i) + [0] * (maxlen - len(input_ids_i)-len(target_ids_i))
+          target_indicators.append(target_indicators_i)
+      #   target_indicators = [[0]*len(input_ids_i) + [1]*len(t) + [0]*(maxlen-len(query_ids)) for t in target_lists]
+    #   query_ids = [[pad_id] * (maxlen - len(t)) + t for t in token_lists]
+    #   input_ids = [[pad_id] * (maxlen - len(t)) + t for t in combine_lists]
+    #   target_ids = [[pad_id] * (maxlen - len(t)) + t for t in target_lists]
+    #   target_indicators = [[0] * (maxlen - len(t)) + [1] * len(t) for t in target_lists]
+    #   attention_mask = [[0] * (maxlen - len(t)) + [1] * len(t) for t in combine_lists]
       return dict(
           input_ids=torch.tensor(input_ids).to(device),
           query_ids=torch.tensor(query_ids).to(device),
