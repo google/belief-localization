@@ -99,7 +99,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
   # decrease weight norm constraint if doing fact erasure
   if args.fact_erasure:
       if alg_name == "FT":
-          return_dict['norm_constraint'] = 1e-5
+          return_dict['norm_constraint'] = 1e-4
   # increase number of steps if noising the subject
   if args.fact_forcing:
     if alg_name == "FT":
@@ -210,11 +210,11 @@ def make_editing_results_df(exp_name, n=1000):
         if data_type != 'neighborhood':
             cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
-            print("post prob: ", round(post_prob,4), " pre_prob: ", round(pre_prob,4))
-            print(round(abs_diff,4))
-            print(round(max_abs_diff,4))
-            print(round(abs_diff / max_abs_diff, 4))
-            cur_sum[f'{data_type}_score'] = abs_diff / max_abs_diff
+            # print("post prob: ", round(post_prob,4), " pre_prob: ", round(pre_prob,4))
+            # print(round(abs_diff,4))
+            # print(round(max_abs_diff,4))
+            # print(round(abs_diff / max_abs_diff, 4))
+            cur_sum[f'{data_type}_score'] = 1 - abs_diff / max_abs_diff
     cur_sum["target_score"] = hmean([
         cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
     ])
