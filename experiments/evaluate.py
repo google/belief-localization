@@ -215,6 +215,7 @@ def make_editing_results_df(exp_name, n=1000):
             # print(round(max_abs_diff,4))
             # print(round(abs_diff / max_abs_diff, 4))
             cur_sum[f'{data_type}_score'] = 1 - abs_diff / max_abs_diff
+    print(round(cur_sum['rewrite_score'], 4))
     cur_sum["target_score"] = hmean([
         cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
     ])
@@ -737,6 +738,8 @@ if __name__ == "__main__":
         central_layers = [-1] + central_layers
     if args.edit_layer > -2:
         central_layers = [args.edit_layer]
+    if alg_name == "ROME":
+        central_layers = np.setdiff1d(central_layers, [24, 27])
     print("Starting sweep with hparams:")
     print("- window_sizes: ", window_sizes)
     print("- central_layers: ", central_layers)
