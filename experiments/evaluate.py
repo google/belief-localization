@@ -223,6 +223,7 @@ def make_editing_results_df(exp_name, n=1000):
             print(" post prob: ", round(post_prob, 4), " pre prob: ", round(pre_prob, 4))
             print("   recovered: ", round(recovered_prop, 4))
         if data_type == 'paraphrase':
+            print(data_type)
             print(" post prob: ", round(post_prob, 4), " pre prob: ", round(pre_prob, 4))
             print("   recovered: ", round(recovered_prop, 4))
         if data_type != 'neighborhood':
@@ -840,7 +841,7 @@ if __name__ == "__main__":
 
     print(f"saving csv at {save_path}...")
     # metrics = ['rewrite_prob_diff', 'rewrite_post_prob', 'rewrite_score', 'paraphrase_prob_diff', 'paraphrase_post_prob', 'paraphrase_score', 'neighborhood_prob_diff', 'neighborhood_score']
-    metrics = ['post_rewrite_success', 'rewrite_prob_diff', 'rewrite_post_prob', 'rewrite_score', 'paraphrase_prob_diff', 'paraphrase_post_prob', 'paraphrase_score', 'neighborhood_prob_diff', 'neighborhood_score']
+    metrics = ['post_rewrite_success', 'rewrite_prob_diff', 'rewrite_post_prob', 'post_paraphrase_success', 'rewrite_score', 'paraphrase_prob_diff', 'paraphrase_post_prob', 'paraphrase_score', 'neighborhood_prob_diff', 'neighborhood_score']
     # metrics = ['rewrite_score', 'paraphrase_score', 'neighborhood_score', 'target_score']
     # if args.fact_erasure or args.fact_amplification or args.fact_forcing or args.weight_based_tracing:
     #     metrics = ['rewrite_prob_diff', 'paraphrase_prob_diff', 'neighborhood_prob_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
