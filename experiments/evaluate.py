@@ -786,7 +786,7 @@ if __name__ == "__main__":
 
     print(f"saving csv at {save_path}...")
     metrics = ['rewrite_prob_diff', 'rewrite_score', 'paraphrase_prob_diff', 'paraphrase_score', 'neighborhood_prob_diff', 'neighborhood_score']
-    metrics = ['rewrite_score', 'paraphrase_score', 'neighborhood_score', 'target_score']
+    # metrics = ['rewrite_score', 'paraphrase_score', 'neighborhood_score', 'target_score']
     # if args.fact_erasure or args.fact_amplification or args.fact_forcing or args.weight_based_tracing:
     #     metrics = ['rewrite_prob_diff', 'paraphrase_prob_diff', 'neighborhood_prob_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
     # else:
