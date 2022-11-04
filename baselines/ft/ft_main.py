@@ -163,9 +163,9 @@ def execute_ft(
                 inputs = {k: v.repeat(repeat_input,1) for k,v in inputs.items()}
                 target_ids = target_ids.repeat(repeat_input,1)
                 last_token_inds = inputs["attention_mask"].sum(dim=1) - 1
-                loss_mask = target_ids != tok.unk_token_id    
+                # loss_mask = target_ids != tok.unk_token_id    
                 outputs = model(**inputs)
-                last_token_logits = outputs.logits[torch.arange(bs), last_token_inds]
+                # last_token_logits = outputs.logits[torch.arange(bs), last_token_inds]
                 # supervision will be of shape [n_layers, num_noise_samples, seq_len, hidden_dim]
                 hidden_states = outputs.hidden_states
                 hidden_states = torch.stack([hidden_states[layer+1] for layer in hparams.layers], dim=0)
@@ -214,7 +214,7 @@ def execute_ft(
             star_str = "*"; empty_str = ""
             print_addendum = "| " + ' '.join([f" {tok_idx}{star_str if tok_idx in range(*e_range) else empty_str}: {tok_loss:.5f}" for tok_idx, tok_loss in enumerate(per_tok_loss.tolist())])
         else:
-            print_addendum = f"| (pred prob: {pred_prob[0].item():.4f})"
+            print_addendum = f"| (pred prob: {pred_prob.item():.4f})"
         print(f"Total loss at epoch {it}: {loss_meter.avg:.4f} ", print_addendum)
 
         if not args.fact_erasure:
