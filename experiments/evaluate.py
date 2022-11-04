@@ -99,7 +99,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
   # decrease weight norm constraint if doing fact erasure
   if args.fact_erasure:
       if alg_name == "FT":
-          return_dict['norm_constraint'] = 1e-3
+          return_dict['norm_constraint'] = 1e-5
   # increase number of steps if noising the subject
   if args.fact_forcing:
     if alg_name == "FT":
@@ -209,6 +209,9 @@ def make_editing_results_df(exp_name, n=1000):
             cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
             cur_sum[f'{data_type}_score'] = abs_diff / max_abs_diff
+    cur_sum["target_score"] = hmean([
+        cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
+    ])
     # compute essence scores 
     if 'essence_score' in data["post"]:
         cur_sum[f"post_essence_ppl"] = data["post"]['essence_score']
@@ -771,10 +774,11 @@ if __name__ == "__main__":
     blob.upload_from_filename(save_path)
 
     print(f"saving csv at {save_path}...")
-    if args.fact_erasure or args.fact_amplification or args.fact_forcing or args.weight_based_tracing:
-        metrics = ['rewrite_prob_diff', 'paraphrase_prob_diff', 'neighborhood_prob_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
-    else:
-        metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score']
+    metrics = ['rewrite_prob_diff', 'rewrite_score', 'paraphrase_prob_diff', 'paraphrase_score', 'neighborhood_prob_diff', 'neighborhood_score']
+    # if args.fact_erasure or args.fact_amplification or args.fact_forcing or args.weight_based_tracing:
+    #     metrics = ['rewrite_prob_diff', 'paraphrase_prob_diff', 'neighborhood_prob_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
+    # else:
+    #     metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score']
     if len(window_sizes) == 1 and len(central_layers) == 1:
         print("\nfinal metrics: ")
         for metric in metrics:
