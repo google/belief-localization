@@ -484,16 +484,18 @@ def main(
                         n_gen_per_prompt=1,
                         max_out_len=12,
                     )
-                noised_pred_tokens = tok.encode(essence_texts[0])
+                    new_target = essence_texts[0]
+                # noised_pred_tokens = tok.encode(essence_texts[0])
                 # _, noised_pred_id = corrupted_forward_pass(mt.model, None, gen_batch, tokens_to_mix=e_range, noise=hparams.editing_noise)
                 # noised_pred_token = tok.decode([noised_pred_id])
                 request['request_baseline'] = request['target_true']['str']
-                request['target_new']['str'] = essence_texts[0]
+                request['target_new']['str'] = new_target
                 request['target_new']['id'] = 'noised-input'
                 if verbose:
-                    score_batch = make_inputs(tok, [prompt], targets=[noised_pred_tokens])
+                    score_batch = make_inputs(tok, [prompt], targets=new_target)
                     init_target_prob = score_from_batch(model, score_batch)
-                    print(f" NEW TARGET PREDICTION: \"{noised_pred_token}\" with init pred prob: {init_target_prob.item():.4f}")
+                    print(f" NEW TARGET PREDICTION: {new_target}")
+                    print(f" with init pred prob: {init_target_prob.item():.4f}")
             elif args.fact_erasure:
                 batch = make_inputs(mt.tokenizer, prompts=[prompt] * num_noise_samples, targets=[target_true] * num_noise_samples)
                 prior_prob = corrupted_forward_pass(mt.model, batch, None, tokens_to_mix=e_range, noise=hparams.editing_noise)
