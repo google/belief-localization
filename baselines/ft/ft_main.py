@@ -150,7 +150,7 @@ def execute_ft(
                 batch['output_hidden_states'] = True
 
             opt.zero_grad()
-            bs = inputs["input_ids"].shape[0]
+            bs = batch["input_ids"].shape[0]
             
             # compute loss based on objective
             if not (args.fact_erasure or args.weight_based_tracing):
