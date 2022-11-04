@@ -145,7 +145,7 @@ def execute_ft(
                 seq_log_probs = score_from_batch(model, batch, return_log_probs=True)
                 nll = -seq_log_probs.sum()
                 pred_prob = torch.exp(-nll)
-                
+
             if args.weight_based_tracing:
                 batch['output_hidden_states'] = True
 
@@ -233,6 +233,11 @@ def execute_ft(
             v[...] = weights_copy[k]
 
     print(f"Deltas successfully computed for {list(weights.keys())}")
+
+    print("after optimization ")
+    print(txt)
+    print(tgt)
+    print(pred_prob)
 
     return deltas
 

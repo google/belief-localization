@@ -565,6 +565,7 @@ def main(
             # Execute evaluation suite
             start = time.time()
             with torch.no_grad(): #, nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing else nullcontext() as td:
+                import pdb; pdb.set_trace()
                 metrics = {
                     "case_id": case_id,
                     "requested_rewrite": request,
