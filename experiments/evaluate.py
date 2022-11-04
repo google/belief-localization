@@ -70,7 +70,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     # weight norm constraints for each method
     if alg_name == "FT":
         if args.fact_erasure:
-            return_dict['norm_constraint'] = 5e-5
+            return_dict['norm_constraint'] = 1e-5
         else:
             return_dict['norm_constraint'] = 1e-4
   # hack for applying ROME to multiple 3 layers
@@ -764,7 +764,7 @@ if __name__ == "__main__":
                     verbose=args.verbose,
                     overwrite=args.overwrite,
                     correctness_check=args.correctness_filter,
-                    target_prob_check=.02 if args.correctness_filter else 0
+                    target_prob_check=.02 if args.correctness_filter and args.fact_erasure else 0
                 )
             # accumulate results
             exp_name = ROME_experiment_name_from_override_params(args, model_name, alg_name, ds_name, override_hparams, hparams_class)
