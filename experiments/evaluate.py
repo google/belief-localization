@@ -672,7 +672,7 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
-    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=True,
+    parser.set_defaults(skip_generation_tests=True, do_essence_tests=False, conserve_memory=True,
                         correctness_filter=True)
     args = parser.parse_args()
 
