@@ -19,10 +19,10 @@ from rome.tok_dataset import (
     flatten_masked_batch,
     length_collation,
 )
+from util.fewshot_utils import score_from_batch
 from util import nethook
 from util.globals import DATA_DIR
 from util.runningstats import Covariance, tally
-
 
 def main():
     parser = argparse.ArgumentParser(description="Causal Tracing")
@@ -444,27 +444,6 @@ def get_high_and_low_scores(
     low_score = trace_with_patch(mt.model, batch, [], pred_id, tokens_to_mix=e_range, noise=noise)
     high_score = scores[0]
     return high_score.item(), low_score.item()
-
-
-def score_from_batch(model, batch):
-  model_batch = {
-      'input_ids' : batch['input_ids'],
-      'attention_mask' : batch['attention_mask']
-  }
-  target_tokens = batch['target_ids']
-  target_mask = batch['target_indicators']
-  logits = model(**model_batch).logits
-  log_probs = torch.log_softmax(logits, dim=-1)
-  # align probs and target mask by cutting off one token idx from the ends
-  log_probs = log_probs[:,:-1,:] # batch_size x seq_len x vocab_size
-  target_tokens = target_tokens[:,1:] # batch_size x seq_len
-  target_mask = target_mask[:,1:]
-  # now iterate over examples and tokens, collecting the target token prob
-  log_probs = torch.gather(log_probs, -1, target_tokens.unsqueeze(-1)).squeeze(-1)
-  # will sum up log probs, so zero out log_probs for non-target indices
-  log_probs = target_mask * log_probs
-  seq_log_probs = log_probs.sum(-1)
-  return torch.exp(seq_log_probs)
 
 
 def predict_model(mt, 

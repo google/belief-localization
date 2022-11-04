@@ -155,6 +155,7 @@ def execute_ft(
             import pdb; pdb.set_trace()
             logprobs = torch.nn.functional.log_softmax(last_token_logits, dim=-1)
             nll = -(torch.gather(logprobs, 1, target_ids) * loss_mask).sum(1) / loss_mask.sum(1)
+            nll = -(torch.gather(logprobs, -1, target_ids.unsqueeze(-1)).squeeze(-1) * loss_mask).sum(1) / loss_mask.sum(1)
             pred_prob = torch.exp(-nll)
             if not (args.fact_erasure or args.weight_based_tracing):
                 loss = nll    

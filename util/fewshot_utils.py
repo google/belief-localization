@@ -57,7 +57,6 @@ def score_from_batch(model, batch):
   target_tokens = target_tokens[:,1:] # batch_size x seq_len
   target_mask = target_mask[:,1:]
   # now iterate over examples and tokens, collecting the target token prob
-  import pdb; pdb.set_trace()
   log_probs = torch.gather(log_probs, -1, target_tokens.unsqueeze(-1)).squeeze(-1)
   # will sum up log probs, so zero out log_probs for non-target indices
   log_probs = target_mask * log_probs

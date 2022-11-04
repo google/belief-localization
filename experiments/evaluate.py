@@ -492,7 +492,7 @@ def main(
                 request['target_new']['str'] = new_target
                 request['target_new']['id'] = 'noised-input'
                 if verbose:
-                    score_batch = make_inputs(tok, [prompt], targets=new_target)
+                    score_batch = make_inputs(tok, [prompt], targets=[new_target])
                     init_target_prob = score_from_batch(model, score_batch)
                     print(f" NEW TARGET PREDICTION: {new_target}")
                     print(f" with init pred prob: {init_target_prob.item():.4f}")
