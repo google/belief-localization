@@ -77,7 +77,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
             return_dict['norm_constraint'] = 1e-4
         elif args.tracing_reversal:
             return_dict['norm_constraint'] = 1e-3
-            return_dict['num_steps'] = 50
+            # return_dict['num_steps'] = 25
         else:
             return_dict['norm_constraint'] = args.norm_constraint
   # hack for applying ROME to multiple 3 layers
@@ -849,8 +849,4 @@ if __name__ == "__main__":
                 print(f" {metric:.20s}: {avg_val:.3f}")
             else:
                 print(f" missing {metric}")
-    if args.verbose:
-        print("\nsample rows:")
-        print(results_df.loc[:,['case_id', 'subject', 'target', 'request', 'post_rewrite_success', 'post_neighborhood_success', 'post_paraphrase_success', 'post_score', 'essence_ppl_diff']])    
-
 
