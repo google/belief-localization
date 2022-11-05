@@ -222,14 +222,6 @@ def make_editing_results_df(exp_name, n=1000):
         cur_sum[f'{data_type}_recovered'] = recovered_prop
         cur_sum[f'{data_type}_erased'] = erased_prop
         max_abs_diff = np.abs(pre_prob - .5) + .5
-        if data_type == 'rewrite':
-            print(data_type)
-            print(" post prob: ", round(post_prob, 4), " pre prob: ", round(pre_prob, 4))
-            print("   recovered: ", round(recovered_prop, 4))
-        if data_type == 'paraphrase':
-            print(data_type)
-            print(" post prob: ", round(post_prob, 4), " pre prob: ", round(pre_prob, 4))
-            print("   recovered: ", round(recovered_prop, 4))
         if data_type != 'neighborhood':
             cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
