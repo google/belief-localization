@@ -844,6 +844,7 @@ if __name__ == "__main__":
     blob.upload_from_filename(save_path)
 
     print(f"saving csv at {save_path}...")
+    print("results shape: ", results_df.shape)
     # metrics = ['rewrite_prob_diff', 'rewrite_post_prob', 'rewrite_score', 'paraphrase_prob_diff', 'paraphrase_post_prob', 'paraphrase_score', 'neighborhood_prob_diff', 'neighborhood_score']
     metrics = ['post_rewrite_success', 'rewrite_prob_diff', 'rewrite_post_prob', 'rewrite_score', 'post_paraphrase_success', 'paraphrase_prob_diff', 'paraphrase_post_prob', 'paraphrase_score', 'post_neighborhood_success', 'neighborhood_prob_diff', 'neighborhood_score']
     # metrics = ['rewrite_score', 'paraphrase_score', 'neighborhood_score', 'target_score']
