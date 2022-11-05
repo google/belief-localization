@@ -194,6 +194,7 @@ def format_prompt_from_df(df, test_input, answers=None, instructions=None, cot_r
 def make_results_df(model_name, exp_name, count=1208):
   all_data_points = []
   print(f"Making results_df for exp: {exp_name}...")
+  skipped = 0
   for kind in [None, 'mlp', 'attn']:
     read_count = 0
     for data_point_id in range(count):
@@ -202,8 +203,9 @@ def make_results_df(model_name, exp_name, count=1208):
         data = pd.read_csv(path)
         read_count += 1
         all_data_points.append(data)
-      else:
+      elif skipped < 10:
         print(f"skipping reading point {path}")
+        skipped += 1
   results_df = pd.concat([result_df for result_df in all_data_points])  
   return results_df
 
