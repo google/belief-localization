@@ -695,7 +695,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--correctness_filter",
         type=int,
-        default=1,
+        default=0,
         choices=[0,1],
         help="Only eval on points with correct generations or p(target_true) >= .1",
     )
