@@ -193,14 +193,18 @@ def make_editing_results_df(exp_name, n=1000):
     rewrite_data = record['requested_rewrite']
     prompt = rewrite_data['prompt'].format(rewrite_data['subject'])
     target = rewrite_data['target_true']['str']
-    record_dict = {
-        'case_id': [record['case_id']],
-        'prompt': [prompt],
-        'target': [target],
-        'subject' : [rewrite_data['subject']],
-        'request' : [rewrite_data['target_new']['str']],
-        'request_baseline': [rewrite_data['request_baseline']]
-    }
+    try:
+        record_dict = {
+            'case_id': [record['case_id']],
+            'prompt': [prompt],
+            'target': [target],
+            'subject' : [rewrite_data['subject']],
+            'request' : [rewrite_data['target_new']['str']],
+            'request_baseline': [rewrite_data['request_baseline']]
+        }
+    except:
+        print("skipping ", case_result_path, " missing basic info")
+        continue
     cur_sum = collections.defaultdict(lambda: [])
     data = record
     # record difference in pre and post probs for target_new
