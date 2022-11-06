@@ -728,6 +728,7 @@ if __name__ == "__main__":
     # set device
     device = torch.device(f"cuda:{args.gpu}")
     np.random.seed(args.seed)
+    torch.cuda.set_device(device)
     torch.random.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
 
