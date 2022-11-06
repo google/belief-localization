@@ -79,6 +79,19 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
             return_dict['norm_constraint'] = 1e-3
         else:
             return_dict['norm_constraint'] = 1e-4
+    if alg_name == "ROME":
+        if args.fact_erasure:
+            return_dict['v_lr'] = 5e-2
+        if args.fact_amplification:
+            return_dict['v_lr'] = 5e-2
+        elif args.fact_forcing:
+            raise ValueError("not yet implemented")
+            return_dict['v_lr'] = 1e-4
+        elif args.tracing_reversal:
+            raise ValueError("not yet implemented")
+            return_dict['v_lr'] = 1e-3
+        else:
+            return_dict['v_lr'] = 5e-2
   # hack for applying ROME to multiple 3 layers
   elif window_size == 3 and alg_name == 'ROME':
     # budget the window size so that we're never editing fewer than three layers
