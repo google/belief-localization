@@ -664,7 +664,7 @@ if __name__ == "__main__":
         "--v_lr",
         type=float,
         default=-1,
-        help="l0 norm constraint on constrained finetuning",
+        help="learning rate for finding v* vector in ROME",
     )
     parser.add_argument(
         "--overwrite",
@@ -809,8 +809,8 @@ if __name__ == "__main__":
         central_layers = [-1] + central_layers
     if args.edit_layer > -2:
         central_layers = [args.edit_layer]
-    if alg_name == "ROME":
-        central_layers = np.setdiff1d(central_layers, [24, 27])
+    # if alg_name == "ROME":
+    #     central_layers = np.setdiff1d(central_layers, [24, 27])
     print("Starting sweep with hparams:")
     print("- window_sizes: ", window_sizes)
     print("- central_layers: ", central_layers)
