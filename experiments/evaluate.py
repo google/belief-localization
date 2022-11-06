@@ -69,9 +69,11 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     return_dict = {'layers' : [central_layer]}
     # weight norm constraints for each method
     if alg_name == "FT":
-        if args.fact_erasure:
+        if args.norm_constraint > -1:
+            return_dict['norm_constraint'] = args.norm_constraint
+        elif args.fact_erasure:
             return_dict['norm_constraint'] = 5e-5
-        if args.fact_amplification:
+        elif args.fact_amplification:
             return_dict['norm_constraint'] = 5e-5
         elif args.fact_forcing:
             return_dict['norm_constraint'] = 1e-4
@@ -80,7 +82,9 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
         else:
             return_dict['norm_constraint'] = 1e-4
     if alg_name == "ROME":
-        if args.fact_erasure:
+        if args.v_lr > -1:
+            return_dict['v_lr'] = args.v_lr
+        elif args.fact_erasure:
             return_dict['v_lr'] = 5e-2
         if args.fact_amplification:
             return_dict['v_lr'] = 5e-2
@@ -653,7 +657,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--norm_constraint",
         type=float,
-        default=1e-4,
+        default=-1,
+        help="l0 norm constraint on constrained finetuning",
+    )
+    parser.add_argument(
+        "--v_lr",
+        type=float,
+        default=-1,
         help="l0 norm constraint on constrained finetuning",
     )
     parser.add_argument(
