@@ -104,6 +104,7 @@ def execute_rome(
         )
         print("Left vector shape:", left_vector.shape)
         right_vector: torch.Tensor = compute_v(
+            args,
             model,
             tok,
             request,
