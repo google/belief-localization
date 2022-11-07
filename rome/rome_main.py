@@ -175,7 +175,7 @@ def get_context_templates(model, tok, length_params):
                 [],
             )
         ]
-        bad_chars = ['\t}']
+        bad_chars = ['\t}', '\n}']
         for idx, c in enumerate(CONTEXT_TEMPLATES_CACHE):
             for bad_char in bad_chars:
                 if bad_char in c: 
