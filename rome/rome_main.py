@@ -177,9 +177,11 @@ def get_context_templates(model, tok, length_params):
         ]
         bad_chars = ['\t}', '\n}']
         for idx, c in enumerate(CONTEXT_TEMPLATES_CACHE):
+            new_c = c
             for bad_char in bad_chars:
                 if bad_char in c: 
-                    CONTEXT_TEMPLATES_CACHE[idx] = c.replace(bad_char, "")
+                    new_c = new_c.replace(bad_char, "")
+            CONTEXT_TEMPLATES_CACHE[idx] = new_c
 
         print(f"Cached context templates {CONTEXT_TEMPLATES_CACHE}")
 
