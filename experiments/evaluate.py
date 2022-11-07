@@ -86,26 +86,10 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
             return_dict['v_lr'] = args.v_lr
         else:
             return_dict['v_lr'] = 5e-1
-  # hack for applying ROME to multiple 3 layers
-  elif window_size == 3 and alg_name == 'ROME':
-    # budget the window size so that we're never editing fewer than three layers
-    # hardcoding for now
-    layers = [central_layer-1, central_layer, central_layer+1]
-    if min(layers) < 0:
-        offset = min(layers)
-        layers = [layer - offset for layer in layers]
-    if max(layers) > max(central_layers):
-        offset = max(layers) - num_layers
-        layers = [layer - offset for layer in layers]
-    return_dict = {
-        'layers' : layers,
-        'v_num_grad_steps': 4,
-        'v_lr': 0.1
-        }
   elif window_size > 1:
     layer = central_layer
     window = window_size
-    # same layers logic as used in causal tracing. there is clipping at the edges of the network
+    # same layers logic as used in causal tracing + ROME code. there is clipping at the edges of the network
     layers = list(range(
         max(0, layer - window // 2), min(num_layers, layer - (-window // 2))
         ))
