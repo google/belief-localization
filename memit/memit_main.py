@@ -22,6 +22,7 @@ COV_CACHE = {}
 
 
 def apply_memit_to_model(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     requests: List[Dict],
