@@ -102,7 +102,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     if alg_name == "FT":
         return_dict['num_steps'] = 50
     if alg_name == "ROME":
-        return_dict['v_num_grad_steps'] = 50
+        return_dict['v_num_grad_steps'] = 25
   if args.weight_based_tracing:
     if alg_name == "FT":
         return_dict['num_steps'] = 500
@@ -783,8 +783,8 @@ if __name__ == "__main__":
         central_layers = [-1] + central_layers
     if args.edit_layer > -2:
         central_layers = [args.edit_layer]
-    # if alg_name == "ROME":
-    #     central_layers = np.setdiff1d(central_layers, [24, 27])
+    if alg_name == "ROME":
+        central_layers = np.setdiff1d(central_layers, [24, 27])
     print("Starting sweep with hparams:")
     print("- window_sizes: ", window_sizes)
     print("- central_layers: ", central_layers)
