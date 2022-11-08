@@ -788,7 +788,7 @@ if __name__ == "__main__":
     num_points = args.dataset_size_limit
     alg_name = args.alg_name
     model_name = args.model_name
-    assert alg_name in ["FT", "ROME"]
+    assert alg_name in ["FT", "ROME", "MEMIT"]
     hparams_class = FTHyperParams if alg_name == "FT" else ROMEHyperParams
     ds_name = args.ds_name
     window_sizes = [int(x) for x in args.window_sizes.split()]
