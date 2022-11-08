@@ -800,7 +800,7 @@ if __name__ == "__main__":
     alg_name = args.alg_name
     model_name = args.model_name
     assert alg_name in ["FT", "ROME", "MEMIT"]
-    hparams_class = FTHyperParams if alg_name == "FT" else ROMEHyperParams
+    hparams_class, _ = ALG_DICT[alg_name]
     ds_name = args.ds_name
     window_sizes = [int(x) for x in args.window_sizes.split()]
     if 'gpt2' in model_name:
