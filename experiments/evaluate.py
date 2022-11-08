@@ -115,7 +115,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
         if args.v_lr > -1:
             return_dict['v_lr'] = args.v_lr
         elif args.fact_forcing:
-            return_dict['v_lr'] = 5e-2            
+            return_dict['v_lr'] = 5e-2
         else:
             return_dict['v_lr'] = 5e-1
   # method specific parameters
@@ -518,8 +518,8 @@ def main(
                     print(f" with init pred prob: {init_target_prob.item():.4f}")
             elif args.fact_erasure:
                 batch = make_inputs(mt.tokenizer, prompts=[prompt] * num_noise_samples, targets=[target_true] * num_noise_samples)
-                prior_prob = corrupted_forward_pass(mt.model, batch, None, tokens_to_mix=e_range, noise=hparams.editing_noise)
-                prior_prob = prior_prob.item()
+                # prior_prob = corrupted_forward_pass(mt.model, batch, None, tokens_to_mix=e_range, noise=hparams.editing_noise)
+                # prior_prob = prior_prob.item()
                 request['request_baseline'] = mt.tokenizer.eos_token # arbitrary token, won't use these metrics anyway
                 request['target_new'] = request['target_true']
             elif args.fact_amplification:

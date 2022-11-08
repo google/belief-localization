@@ -20,5 +20,6 @@
     "lm_head_module": "lm_head",
     "mom2_dataset": "wikipedia",
     "mom2_n_samples": 100000,
-    "mom2_dtype": "float32"
+    "mom2_dtype": "float32",
+    "editing_noise": 0.094
 }
