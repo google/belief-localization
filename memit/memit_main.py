@@ -30,6 +30,7 @@ def apply_memit_to_model(
     copy=False,
     return_orig_weights=False,
     cache_template: Optional[str] = None,
+    **kwargs,
 ) -> Tuple[AutoModelForCausalLM, Dict[str, Any]]:
     """
     Returns a model with the desired changes.
@@ -42,7 +43,7 @@ def apply_memit_to_model(
     if copy:
         model = deepcopy(model)
 
-    deltas = execute_memit(model, tok, requests, hparams, cache_template=cache_template)
+    deltas = execute_memit(args, model, tok, requests, hparams, cache_template=cache_template)
 
     with torch.no_grad():
         for w_name, (key_mat, val_mat) in deltas.items():
@@ -62,6 +63,7 @@ def apply_memit_to_model(
 
 
 def execute_memit(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     requests: List[Dict],
@@ -128,6 +130,7 @@ def execute_memit(
         # Compute k/v pair if not loaded from cache
         if not data_loaded:
             cur_z = compute_z(
+                args,
                 model,
                 tok,
                 request,

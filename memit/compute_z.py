@@ -11,6 +11,7 @@ from .memit_hparams import MEMITHyperParams
 
 
 def compute_z(
+    args,
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
     request: Dict,
@@ -34,6 +35,7 @@ def compute_z(
         lm_b = next(model.parameters()).new_zeros(model.config.vocab_size)
 
     print("Computing right vector (v)")
+    patience_counter = 0
 
     # Tokenize target into list of int token IDs
     target_ids = tok(request["target_new"]["str"], return_tensors="pt").to("cuda")[
@@ -152,15 +154,27 @@ def compute_z(
         weight_decay = hparams.v_weight_decay * (
             torch.norm(delta) / torch.norm(target_init) ** 2
         )
-        # weight_decay = hparams.v_weight_decay * torch.norm(delta) ** 2
+        if args.fact_erasure:
+            pred_prob = torch.exp(-nll_loss)
+            loss = pred_prob + kl_loss + weight_decay
+        else:
+            loss = nll_loss + kl_loss + weight_decay
         loss = nll_loss + kl_loss + weight_decay
         print(
             f"loss {np.round(loss.item(), 3)} = {np.round(nll_loss.item(), 3)} + {np.round(kl_loss.item(), 3)} + {np.round(weight_decay.item(), 3)} "
             f"avg prob of [{request['target_new']['str']}] "
             f"{torch.exp(-nll_loss_each).mean().item()}"
         )
-        if loss < 5e-2:
-            break
+        if not args.fact_erasure:
+            if loss < 5e-2:
+                patience_counter += 1
+                if patience_counter >= 5:
+                    break
+                else:
+                    patience_counter = 0
+
+            if it == hparams.v_num_grad_steps - 1:
+                break
 
         if it == hparams.v_num_grad_steps - 1:
             break

@@ -480,7 +480,7 @@ def main(
                         print(f" Essence text: {text[:200]}")
 
             # adjust targets and define 'request_baseline' based on objectives. note model does not necesarily predict 'request_baseline' value before rewriting
-            num_noise_samples = 10 if args.fact_forcing else 1
+            num_noise_samples = 10 if args.fact_forcing and args.alg_name == "FT" else 1 # does not do anything with ROME / MEMIT since these are very low variance
             e_range = find_token_range(tok, substring=subject, prompt_str=prompt)
             request['e_range'] = e_range
             prior_prob = None
