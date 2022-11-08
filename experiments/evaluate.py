@@ -178,11 +178,7 @@ def ROME_experiment_name_from_override_params(args, model_name, alg_name, ds_nam
   params_path = os.path.join(f'{CODE_DIR}/hparams/', alg_name, f"{_model_name}.json")
   if alg_name == 'FT':
     params_path = params_path.replace('.json', '_constr.json')
-  try:
-      hparams = hparams_class.from_json(params_path)
-  except:
-      import pdb; pdb.set_trace()
-      hparams = hparams_class.from_json(params_path)
+  hparams = hparams_class.from_json(params_path)
   if override_hparams is not None:
       hparams.__dict__.update(override_hparams)
   important_hparam_names = override_hparams.keys() if override_hparams is not None else ['layers']
@@ -424,7 +420,7 @@ def main(
          # skip some weird memory issues
         if case_id == 1531:
             continue
-        if case_id == 1537 and args.alg_name == "ROME" and args.tracing_reversal:
+        if case_id == 1517 and args.alg_name == "ROME" and args.tracing_reversal:
             continue
         if rewrite_this_point:
             print("Starting point: ", case_id)
