@@ -20,6 +20,7 @@ class MEMITHyperParams(HyperParams):
     kl_factor: float
     mom2_adjustment: bool
     mom2_update_weight: float
+    editing_noise: float
 
     # Module templates
     rewrite_module_tmp: str
