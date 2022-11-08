@@ -31,6 +31,7 @@ from experiments.causal_trace import layername, corrupted_forward_pass, find_tok
 from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
 from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from rome import ROMEHyperParams, apply_rome_to_model
+from memit import MEMITHyperParams, apply_memit_to_model
 from util import nethook
 from util.fewshot_utils import predict_model, fewshot_accuracy_sum, score_from_batch
 from util.generate import generate_fast
@@ -38,6 +39,7 @@ from util.globals import *
 
 ALG_DICT = {
     "ROME": (ROMEHyperParams, apply_rome_to_model),
+    "MEMIT": (MEMITHyperParams, apply_memit_to_model),
     "FT": (FTHyperParams, apply_ft_to_model),
     "KN": (KNHyperParams, apply_kn_to_model),
     "MEND": (MENDHyperParams, MendRewriteExecutor().apply_to_model),
@@ -84,6 +86,8 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     if alg_name == "ROME":
         if args.v_lr > -1:
             return_dict['v_lr'] = args.v_lr
+        elif args.fact_forcing:
+            return_dict['v_lr'] = 5e-2            
         else:
             return_dict['v_lr'] = 5e-1
   elif window_size > 1:
@@ -98,9 +102,9 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
         if args.norm_constraint > -1:
             return_dict['norm_constraint'] = args.norm_constraint
         elif args.fact_erasure:
-            return_dict['norm_constraint'] = 5e-5
+            return_dict['norm_constraint'] = 1e-5
         elif args.fact_amplification:
-            return_dict['norm_constraint'] = 5e-5
+            return_dict['norm_constraint'] = 1e-5
         elif args.fact_forcing:
             return_dict['norm_constraint'] = 1e-4
         elif args.tracing_reversal:
@@ -406,7 +410,10 @@ def main(
         case_id = record["case_id"] if 'case_id' in record else 'known_id'
         case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
         rewrite_this_point = overwrite or not os.path.exists(case_result_path)
-        if case_id == 1531: # weird memory issue here
+         # skip some weird memory issues
+        if case_id == 1531:
+            continue
+        if case_id == 1537 and args.alg_name == "ROME" and args.tracing_reversal:
             continue
         if rewrite_this_point:
             print("Starting point: ", case_id)
@@ -595,7 +602,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--alg_name",
-        choices=["ROME", "FT", "KN", "MEND", "KE"],
+        choices=["ROME", "FT", "KN", "MEND", "KE", "MEMIT"],
         default="ROME",
         help="Editing algorithm to use. Results are saved in results/<alg_name>/<run_id>, "
         "where a new run_id is generated on each run. "
