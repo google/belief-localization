@@ -320,8 +320,8 @@ def get_subject_noising_function(model, e_range, hparams, embed_layername):
                 b, e = e_range
                 embeds_noise = torch.from_numpy(prng.randn(x.shape[0], e - b, x.shape[2])).to(x.device)
                 x[:, b:e] += hparams.editing_noise * embeds_noise
-            print("added noise to embeds: ", embeds_noise)
-            import pdb; pdb.set_trace()
+            # print("added noise to embeds: ", embeds_noise)
+            # import pdb; pdb.set_trace()
             return x
         else:
             return x
