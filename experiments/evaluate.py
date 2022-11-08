@@ -95,7 +95,18 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
         ))
     return_dict = {'layers' : layers}
     if alg_name == "FT":
-      return_dict['norm_constraint'] = 1e-5
+        if args.norm_constraint > -1:
+            return_dict['norm_constraint'] = args.norm_constraint
+        elif args.fact_erasure:
+            return_dict['norm_constraint'] = 5e-5
+        elif args.fact_amplification:
+            return_dict['norm_constraint'] = 5e-5
+        elif args.fact_forcing:
+            return_dict['norm_constraint'] = 1e-4
+        elif args.tracing_reversal:
+            return_dict['norm_constraint'] = 1e-3
+        else:
+            return_dict['norm_constraint'] = 1e-4
   # method specific parameters
   # increase number of steps if noising the subject
   if args.fact_forcing:
