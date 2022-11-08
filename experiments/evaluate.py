@@ -111,7 +111,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
             return_dict['norm_constraint'] = 1e-3
         else:
             return_dict['norm_constraint'] = 1e-4
-    if alg_name == "ROME":
+    if alg_name == "MEMIT":
         if args.v_lr > -1:
             return_dict['v_lr'] = args.v_lr
         elif args.fact_forcing:
