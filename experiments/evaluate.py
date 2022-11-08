@@ -111,6 +111,13 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
             return_dict['norm_constraint'] = 1e-3
         else:
             return_dict['norm_constraint'] = 1e-4
+    if alg_name == "ROME":
+        if args.v_lr > -1:
+            return_dict['v_lr'] = args.v_lr
+        elif args.fact_forcing:
+            return_dict['v_lr'] = 5e-2            
+        else:
+            return_dict['v_lr'] = 5e-1
   # method specific parameters
   # increase number of steps if noising the subject
   if args.fact_forcing:
