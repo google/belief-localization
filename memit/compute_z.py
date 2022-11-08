@@ -159,7 +159,6 @@ def compute_z(
             loss = pred_prob + kl_loss + weight_decay
         else:
             loss = nll_loss + kl_loss + weight_decay
-        loss = nll_loss + kl_loss + weight_decay
         print(
             f"loss {np.round(loss.item(), 3)} = {np.round(nll_loss.item(), 3)} + {np.round(kl_loss.item(), 3)} + {np.round(weight_decay.item(), 3)} "
             f"avg prob of [{request['target_new']['str']}] "
