@@ -114,6 +114,8 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     if alg_name == "MEMIT":
         if args.v_lr > -1:
             return_dict['v_lr'] = args.v_lr
+        elif args.fact_forcing:
+            return_dict['v_lr'] = 5e-1
         else:
             return_dict['v_lr'] = 5e-1
   # method specific parameters
@@ -756,6 +758,8 @@ if __name__ == "__main__":
     # experiment checks
     if args.fact_erasure:
         assert args.correctness_filter, "only erase known facts"
+    if args.alg_name == "MEMIT":
+        assert args.window_sizes != "1", "use window size >=1 with MEMIT"
 
     # load model
     if args.run:
