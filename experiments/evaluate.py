@@ -239,9 +239,13 @@ def make_editing_results_df(exp_name, n=1000):
             cur_sum[f'{data_type}_score'] = erased_prop if args.fact_erasure else recovered_prop
         else:
             cur_sum[f'{data_type}_score'] = 1 - abs_diff / max_abs_diff
-    cur_sum["target_score"] = hmean([
-        cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
-    ])
+    try:
+        target_score = hmean([
+            cur_sum['rewrite_score'], cur_sum['paraphrase_score'], cur_sum['neighborhood_score']
+        ])
+    except:
+        target_score = 0
+    cur_sum["target_score"] = target_score
     # compute essence scores 
     if 'essence_score' in data["post"]:
         cur_sum[f"post_essence_ppl"] = data["post"]['essence_score']
