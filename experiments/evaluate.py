@@ -424,7 +424,7 @@ def main(
          # skip some weird memory issues
         if case_id == 1531:
             continue
-        if case_id == 1517 and args.alg_name == "ROME" and args.tracing_reversal:
+        if case_id == 1517 and ((args.alg_name == "ROME" and args.tracing_reversal) or len(hparams.layers) > 1):
             continue
         if rewrite_this_point:
             print("Starting point: ", case_id)
