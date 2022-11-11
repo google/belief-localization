@@ -94,8 +94,8 @@ def execute_ft(
             f"Executing FT algo for: "
             f"[{request['prompt'].format(request['subject'])}] -> [{request['target_new']['str']}]"
         )
-        if args.fact_erasure:
-            print(f"prior prob is: {prior_prob:.4f}")
+        # if args.fact_erasure:
+        #     print(f"prior prob is: {prior_prob:.4f}")
         e_range = request['e_range']
 
     # Retrieve weights that user desires to change
