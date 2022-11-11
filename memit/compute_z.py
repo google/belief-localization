@@ -43,12 +43,15 @@ def compute_z(
     ][0]
 
     # Compile list of rewriting and KL x/y pairs
-    rewriting_prompts, kl_prompts = [
-        context.format(request["prompt"]) + tok.decode(target_ids[:-1])
-        for context_types in context_templates
-        for context in context_types
-    ], ["{} is a"]
-    all_prompts = rewriting_prompts + kl_prompts
+    try:
+        rewriting_prompts, kl_prompts = [
+            context.format(request["prompt"]) + tok.decode(target_ids[:-1])
+            for context_types in context_templates
+            for context in context_types
+        ], ["{} is a"]
+        all_prompts = rewriting_prompts + kl_prompts
+    except:
+        import pdb; pdb.set_trace()
 
     input_tok = tok(
         [prompt.format(request["subject"]) for prompt in all_prompts],
