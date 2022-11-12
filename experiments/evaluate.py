@@ -110,7 +110,7 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
         elif args.tracing_reversal:
             return_dict['norm_constraint'] = 1e-3
         else:
-            return_dict['norm_constraint'] = 1e-4
+            return_dict['norm_constraint'] = 5e-5
     if alg_name == "MEMIT":
         if args.v_lr > -1:
             return_dict['v_lr'] = args.v_lr
@@ -129,6 +129,8 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     if alg_name == "FT":
         return_dict['num_steps'] = 500
         return_dict['lr'] = 1e-5
+  if args.kl_factor >- 1:
+      return_dict['kl_factor']  = args.kl_factor
   return return_dict
 
 def sweep_experiment_name(args, model_name, alg_name, ds_name, sweep_params):
@@ -663,6 +665,12 @@ if __name__ == "__main__":
         type=float,
         default=-1,
         help="l0 norm constraint on constrained finetuning",
+    )
+    parser.add_argument(
+        "--kl_factor",
+        type=float,
+        default=-1,
+        help="weight on kl div for essence drift regularization",
     )
     parser.add_argument(
         "--v_lr",
