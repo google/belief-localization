@@ -60,7 +60,7 @@ def compute_z(
             padding=True,
         ).to("cuda")
     except:
-        import pdb pdb.set_trace()
+        import pdb; pdb.set_trace()
 
     # Compute rewriting targets
     rewriting_targets = torch.tensor(-100, device="cuda").repeat(
