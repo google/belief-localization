@@ -53,11 +53,14 @@ def compute_z(
     except:
         import pdb; pdb.set_trace()
 
-    input_tok = tok(
-        [prompt.format(request["subject"]) for prompt in all_prompts],
-        return_tensors="pt",
-        padding=True,
-    ).to("cuda")
+    try:
+        input_tok = tok(
+            [prompt.format(request["subject"]) for prompt in all_prompts],
+            return_tensors="pt",
+            padding=True,
+        ).to("cuda")
+    except:
+        import pdb pdb.set_trace()
 
     # Compute rewriting targets
     rewriting_targets = torch.tensor(-100, device="cuda").repeat(

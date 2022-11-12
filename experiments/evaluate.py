@@ -72,7 +72,6 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
     # weight norm constraints for each method
     if alg_name == "FT":
         if args.norm_constraint > -1:
-            print("USING NORM CONSTRAINT: ", args.norm_constraint)
             return_dict['norm_constraint'] = args.norm_constraint
         elif args.fact_erasure:
             return_dict['norm_constraint'] = 1e-5
