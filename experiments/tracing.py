@@ -468,13 +468,21 @@ if __name__ == "__main__":
         default=1,
         choices=[0,1],
     )
-    parser.set_defaults(skip_generation_tests=True, do_essence_tests=True, conserve_memory=True, verbose=False, overwrite=False,
-                        use_noised_target=False, use_noised_subject=False)
+    parser.add_argument(
+        "--gpu",
+        type=str,
+        default="0",
+    )
+    parser.set_defaults(verbose=False, overwrite=False)
     args = parser.parse_args()
 
-    # set seed
+    # set device and seed
     RANDOM_SEED=1
-    np.random.seed(RANDOM_SEED)
+    device = torch.device(f"cuda:{args.gpu}")
+    np.random.seed(args.seed)
+    torch.cuda.set_device(device)
+    torch.random.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
 
     # run experiment
     _model_name = os.path.split(args.model_name)[-1]
