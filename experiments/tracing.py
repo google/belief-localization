@@ -323,6 +323,9 @@ def causal_tracing_loop(experiment_name, task_name, split_name, model_name, mt, 
                                                            extract_answers=extract_answers, 
                                                            trigger_phrase=trigger_phrase)
       else:
+        if verbose:
+            print("pred: ", preds)
+            print("label: ", label)
         is_correct = fewshot_accuracy_sum(preds, [label])
       if correctness_filter is True:
         if not is_correct:
