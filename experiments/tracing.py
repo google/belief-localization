@@ -477,12 +477,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # set device and seed
-    RANDOM_SEED=1
     device = torch.device(f"cuda:{args.gpu}")
-    np.random.seed(args.seed)
     torch.cuda.set_device(device)
-    torch.random.manual_seed(args.seed)
-    torch.cuda.manual_seed_all(args.seed)
+    RANDOM_SEED=1
+    np.random.seed(RANDOM_SEED)
+    torch.random.manual_seed(RANDOM_SEED)
+    torch.cuda.manual_seed_all(RANDOM_SEED)
 
     # run experiment
     _model_name = os.path.split(args.model_name)[-1]
