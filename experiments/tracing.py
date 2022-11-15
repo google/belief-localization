@@ -324,9 +324,11 @@ def causal_tracing_loop(args, experiment_name, task_name, split_name, model_name
                                                            trigger_phrase=trigger_phrase)
       else:
         if args.verbose:
+            print("input; ", query_input)
             print("pred: ", preds)
             print("label: ", label)
         is_correct = fewshot_accuracy_sum(preds, [label])
+        import pdb; pdb.set_trace()
       if correctness_filter is True:
         if not is_correct:
           print(f"skipping batch {batch_num}, point {data_point_id}, as it is wrongly predicted")
