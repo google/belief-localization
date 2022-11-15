@@ -252,7 +252,7 @@ def results_dict_to_df(results_dict, tokenizer, exp_name, task_name, split_name)
   df = pd.concat([pd.DataFrame(point) for point in df_dicts])
   return df
 
-def causal_tracing_loop(experiment_name, task_name, split_name, model_name, mt, eval_data, 
+def causal_tracing_loop(args, experiment_name, task_name, split_name, model_name, mt, eval_data, 
                         num_samples, noise_sd, restore_module, window_size, show_plots, 
                         explain_quantity,
                         k, random_seed=0, n=None, prompt_data=None, 
@@ -323,7 +323,7 @@ def causal_tracing_loop(experiment_name, task_name, split_name, model_name, mt, 
                                                            extract_answers=extract_answers, 
                                                            trigger_phrase=trigger_phrase)
       else:
-        if verbose:
+        if args.verbose:
             print("pred: ", preds)
             print("label: ", label)
         is_correct = fewshot_accuracy_sum(preds, [label])
@@ -555,7 +555,7 @@ if __name__ == "__main__":
     for window_size in window_sizes:
         exp_name = f"{_model_name}_{args.ds_name}_k{k}_wd{window_size}_sd{RANDOM_SEED}"
         if args.run:
-            results_df, metadata_df = causal_tracing_loop(exp_name, args.ds_name, "", args.model_name, 
+            results_df, metadata_df = causal_tracing_loop(args, exp_name, args.ds_name, "", args.model_name, 
                                         mt, eval_data,
                                         num_samples, noise_sd, restore_module, window_size, 
                                         max_decode_steps=max_decode_steps,
