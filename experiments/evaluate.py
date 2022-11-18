@@ -878,10 +878,6 @@ if __name__ == "__main__":
     # metrics = ['rewrite_prob_diff', 'rewrite_post_prob', 'rewrite_score', 'paraphrase_prob_diff', 'paraphrase_post_prob', 'paraphrase_score', 'neighborhood_prob_diff', 'neighborhood_score']
     metrics = ['post_rewrite_success', 'rewrite_prob_diff', 'rewrite_post_prob', 'rewrite_score', 'post_paraphrase_success', 'paraphrase_prob_diff', 'paraphrase_post_prob', 'paraphrase_score', 'post_neighborhood_success', 'neighborhood_prob_diff', 'neighborhood_score', 'essence_ppl_diff']
     # metrics = ['rewrite_score', 'paraphrase_score', 'neighborhood_score', 'essence_ppl_diff', 'target_score']
-    # if args.fact_erasure or args.fact_amplification or args.fact_forcing or args.weight_based_tracing:
-    #     metrics = ['rewrite_prob_diff', 'paraphrase_prob_diff', 'neighborhood_prob_diff', 'essence_ppl_diff', 'post_score', 'erasure_loss']
-    # else:
-    #     metrics = ['post_rewrite_success', 'post_rewrite_diff', 'post_neighborhood_success', 'post_neighborhood_diff', 'post_paraphrase_success', 'post_paraphrase_diff', 'essence_ppl_diff', 'post_score']
     if len(window_sizes) == 1 and len(central_layers) == 1:
         print("\nfinal metrics: ")
         for metric in metrics:
