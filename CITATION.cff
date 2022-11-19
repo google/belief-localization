@@ -3,14 +3,10 @@ message: "If you use this software, please cite it as below."
 preferred-citation:
   type: article
   authors:
-  - family-names: "Meng"
-    given-names: "Kevin"
-  - family-names: "Bau"
-    given-names: "David"
-  - family-names: "Andonian"
-    given-names: "Alex"
-  - family-names: "Belinkov"
-    given-names: "Yonatan"
-  journal: "arXiv preprint arXiv:2202.05262"
-  title: "Locating and Editing Factual Associations in GPT"
+  - family-names: "TBD"
+    given-names: "TBD"
+  - family-names: "TBD"
+    given-names: "TBD"
+  journal: "arXiv preprint arXiv:TBD"
+  title: TBD
   year: 2022
