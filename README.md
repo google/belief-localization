@@ -1,83 +1,78 @@
-# Rank-One Model Editing (ROME)
+# What are you really editing?
 
-This repository provides an implementation of Rank-One Model Editing (ROME) on auto-regressive transformers (GPU-only).
-We currently support OpenAI's GPT-2 XL (1.5B) and EleutherAI's GPT-J (6B). The release of a 20B GPT-like model from EleutherAI is expected soon; we hope to support it ASAP.
-
-Feel free to open an issue if you find any problems; we are actively developing this repository and will monitor tickets closely.
-
-[![Colab ROME Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kmeng01/rome/blob/main/notebooks/rome.ipynb)
-
-<p align="center">
-    <img src="https://rome.baulab.info/images/eiftower-crop.svg" alt="causal tracing GIF" width="425px" />
-</p>
+This repository includes code for the paper [What Are You Really Editing? Surprising Differences in Where Knowledge Is Stored vs. Can Be Injected in Language Models](link). It is built on top of code from the MEMIT repository [here](https://github.com/kmeng01/memit).
 
 ## Table of Contents
 1. [Installation](#installation)
 2. [Causal Tracing](#causal-tracing)
-3. [Rank-One Model Editing (ROME)](#rank-one-model-editing-rome-1)
-4. [CounterFact](#counterfact)
-5. [Evaluation](#evaluation)
-    * [Running the Full Evaluation Suite](#running-the-full-evaluation-suite)
-    * [Integrating New Editing Methods](#integrating-new-editing-methods)
-6. [How to Cite](#how-to-cite)
+3. [Model Editing](#model-editing-evaluation)
+4. [Data Analysis](#data-analysis)
 
 ## Installation
 
-We recommend `conda` for managing Python, CUDA, and PyTorch-related dependencies, and `pip` for everything else. To get started, simply install `conda` and run:
-```bash
-./scripts/setup_conda.sh
+For needed packages, run:
+```
+./scripts/setup_conda.sh  
+pip install -r requirements.txt  
+python -c "import nltk; nltk.download(punkt)"
 ```
 
 ## Causal Tracing
 
-[`notebooks/causal_trace.ipynb`](notebooks/causal_trace.ipynb) demonstrates Causal Tracing, which can be modified to apply tracing to the processing of any statement.
+We gather causal tracing results from the first 2000 points in the CounterFact dataset, filtering to 652 correctly completed prompts when using GPT-J. The `window_sizes` argument controls which tracing window sizes to use. To reproduce all GPT-J results in the paper, run tracing experiments with for window sizes 10, 5, 3, and 1. This can be done with the following command:
 
-<p align="center">
-    <img src="https://thevisible.net/u/davidbau/romeweb/small-fast-ct-animation.gif" alt="causal tracing GIF" width="550px" />
-</p>
-
-## Rank-One Model Editing (ROME)
-
-<!-- We provide a simple interactive notebook demonstrating ROME. -->
-
-<!-- ### Second-Moment Key Statistics
-
-**warning this is probably wrong; fixing later.**
-
-First, key statistics must be collected. The `rome` package contains a `layer_stats` module for computing and caching key statistics. See [rome/layer_stats.py](rome/layer_stats.py) for additional flags, but the basic logic can be executed with the following commands:
-
-GPT-2 XL:
-```bash
-python -m rome.layer_stats --layer_num=17 --model_name=gpt2-xl
+```
+python -m experiments.tracing \
+    -n 2000 \
+    --ds_name counterfact \
+    --model_name EleutherAI/gpt-j-6B \
+    --run 1 \
+    --window_sizes "10 5 3 1"
 ```
 
-GPT-J:
-```bash
-python -m rome.layer_stats --layer_num=10 --model_name=EleutherAI/gpt-j-6B
+## Model Editing Evaluation
+
+We check the relationship between causal tracing localization and editing performance using several editing methods applied to five different variants of the basic model editing problem. The editing methods are:
+- Constrained finetuning with Adam at one layer
+- Constrained finetuning with Adam at five adjacent layers
+- ROME (which edits one layer)
+- MEMIT (which edits five layers)
+
+The editing problems include the original model editing problem specified by the CounterFact dataset (changing the prediction for a given input), as well as a few variants mentioned below. 
+
+```
+python -m experiments.evaluate \
+    -n 2000 \
+    --alg_name ROME \
+    --window_sizes "1" \ 
+    --ds_name cf \
+    --model_name EleutherAI/gpt-j-6B \
+    --run 1 \
+    --edit_layer -2 \
+    --correctness_filter 1 \ 
+    --norm_constraint 1e-4 \ 
+    --kl_factor .0625
 ```
 
-### ROME Model Rewriting -->
+Add the following flags for each variation of the experiments:
 
-[`notebooks/rome.ipynb`](notebooks/rome.ipynb) demonstrates ROME. The API is simple; one simply has to specify a *requested rewrite* of the following form:
+- Error Injection: no flag
+- Tracing Reversal: `--tracing_reversal`
+- Fact Erasure: `--tracing_reversal`
+- Fact Amplification: `--tracing_reversal`
+- Tracing Reversal: `--tracing_reversal`
 
-```python
-request = {
-    "prompt": "{} plays the sport of",
-    "subject": "LeBron James",
-    "target_new": {
-        "str": "football"
-    }
-}
-```
+## Data Analysis
 
-Several similar examples are included in the notebook.
+Data analysis for this work is done in R via the `data_analysis.ipynb` file. All plots and regression analyses in the paper can be reproduced via this file.
 
-## CounterFact
 
-Details coming soon!
+--
 
-## Evaluation
+This is not an official Google product.
 
+<<<<<<< PATCH SET (eb48a5 staging for public release)
+=======
 See [`baselines/`](baselines/) for a description of the available baselines.
 
 ### Running the Full Evaluation Suite
@@ -162,3 +157,4 @@ python3 -m experiments/summarize --alg_name=ROME --run_name=run_001
 
 ## Disclaimer
 This is not an officially supported Google product.
+>>>>>>> BASE      (9df1dd Updates for releasing the repository)
