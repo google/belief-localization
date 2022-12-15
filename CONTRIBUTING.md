@@ -20,13 +20,8 @@ sign a new one.
 
 ### Review our Community Guidelines
 
-<<<<<<< PATCH SET (eb48a5 staging for public release)
-This project follows [Google's Open Source Community
-Guidelines](https://opensource.google/conduct/).
-=======
 This project follows
 [Google's Open Source Community Guidelines](https://opensource.google/conduct/).
->>>>>>> BASE      (9df1dd Updates for releasing the repository)
 
 ## Contribution process
 

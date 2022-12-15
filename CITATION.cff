@@ -1,5 +1,3 @@
-<<<<<<< PATCH SET (eb48a5 staging for public release)
-=======
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 preferred-citation:
@@ -16,4 +14,3 @@ preferred-citation:
   journal: "arXiv preprint arXiv:"
   title: Locate Then Edit? Surprising Differences in Where Knowledge Is Stored vs. Can Be Manipulated in Language Models
   year: 2023
->>>>>>> BASE      (9df1dd Updates for releasing the repository)
