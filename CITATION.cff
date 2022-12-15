@@ -3,10 +3,14 @@ message: "If you use this software, please cite it as below."
 preferred-citation:
   type: article
   authors:
-  - family-names: "TBD"
-    given-names: "TBD"
-  - family-names: "TBD"
-    given-names: "TBD"
-  journal: "arXiv preprint arXiv:TBD"
-  title: TBD
-  year: 2022
+  - family-names: "Hase"
+    given-names: "Peter"
+  - family-names: "Bansal"
+    given-names: "Mohit"
+  - family-names: "Kim"
+    given-names: "Been"
+  - family-names: "Ghandeharioun"
+    given-names: "Asma"
+  journal: "arXiv preprint arXiv:"
+  title: Locate Then Edit? Surprising Differences in Where Knowledge Is Stored vs. Can Be Manipulated in Language Models
+  year: 2023

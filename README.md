@@ -152,10 +152,13 @@ python3 -m experiments/summarize --alg_name=ROME --run_name=run_001
 ## How to Cite
 
 ```bibtex
-@article{meng2022locating,
-  title={Locating and Editing Factual Associations in {GPT}},
-  author={Kevin Meng and David Bau and Alex Andonian and Yonatan Belinkov},
-  journal={arXiv preprint arXiv:2202.05262},
-  year={2022}
+@article{hase2023locate,
+  title={Locate Then Edit? Surprising Differences in Where Knowledge Is Stored vs. Can Be Manipulated in Language Models},
+  author={Peter Hase and Mohit Bansal and Been Kim and Asma Ghandeharioun},
+  journal={arXiv preprint arXiv:},
+  year={2023}
 }
 ```
+
+## Disclaimer
+This is not an officially supported Google product.
