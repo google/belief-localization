@@ -1,6 +1,6 @@
 # What are you really editing?
 
-This repository includes code for the paper [What Are You Really Editing? Surprising Differences in Where Knowledge Is Stored vs. Can Be Injected in Language Models](link). It is built on top of code from the MEMIT repository [here](https://github.com/kmeng01/memit).
+This repository includes code for the paper [Locate then Edit? Surprising Differences in Where Knowledge Is Stored vs. Can Be Injected in Language Models](https://arxiv.org/abs/tbd). It is built on top of code from the MEMIT repository [here](https://github.com/kmeng01/memit).
 
 ## Table of Contents
 1. [Installation](#installation)
