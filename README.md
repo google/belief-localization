@@ -66,16 +66,5 @@ Add the following flags for each variation of the experiments:
 
 Data analysis for this work is done in R via the `data_analysis.ipynb` file. All plots and regression analyses in the paper can be reproduced via this file.
 
-## How to Cite
-
-```bibtex
-@article{hase2023locate,
-  title={Locate Then Edit? Surprising Differences in Where Knowledge Is Stored vs. Can Be Manipulated in Language Models},
-  author={Peter Hase and Mohit Bansal and Been Kim and Asma Ghandeharioun},
-  journal={arXiv preprint arXiv:},
-  year={2023}
-}
-```
-
 ## Disclaimer
 This is not an officially supported Google product.
