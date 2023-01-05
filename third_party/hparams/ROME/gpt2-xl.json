@@ -19,10 +19,6 @@
     "lm_head_module": "transformer.wte",
     "mom2_dataset": "wikipedia",
     "mom2_n_samples": 100000,
-<<<<<<< PATCH SET (eb48a5 staging for public release)
     "mom2_dtype": "float32",
     "editing_noise": 0.1
-=======
-    "mom2_dtype": "float32"
->>>>>>> BASE      (9df1dd Updates for releasing the repository)
 }

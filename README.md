@@ -10,9 +10,9 @@ This repository includes code for the paper [Locate then Edit? Surprising Differ
 
 ## Installation
 
-For needed packages, run:
+For needed packages, first create a virtual environment or a conda environment (via `third_party/scripts/setup_conda.sh`), then run:
 ```
-./scripts/setup_conda.sh  
+cd third_party
 pip install -r requirements.txt  
 python -c "import nltk; nltk.download(punkt)"
 ```
@@ -41,10 +41,35 @@ We check the relationship between causal tracing localization and editing perfor
 The editing problems include the original model editing problem specified by the CounterFact dataset (changing the prediction for a given input), as well as a few variants mentioned below. 
 
 ```
-python -m experiments.evaluate \
+python3 -m experiments.evaluate \
     -n 2000 \
     --alg_name ROME \
-    --window_sizes "1" \ 
+    --window_sizes "1" \
+    --ds_name cf \
+    --model_name EleutherAI/gpt-j-6B \
+    --run 1 \
+    --edit_layer -2 \
+    --correctness_filter 1 \
+    --norm_constraint 1e-4 \
+    --kl_factor 1 \
+    --fact_token subject_last
+```
+
+Add the following flags for each variation of the experiments:
+
+- Error Injection: no flag
+- Tracing Reversal: `--tracing_reversal`
+- Fact Erasure: `--fact_erasure`
+- Fact Amplification: `--fact_amplification`
+- Fact Forcing: `--fact_forcing`
+
+For example, to run with constrained finetuning across 5 layers in order to do Fact Erasure, run:
+
+```
+python3 -m experiments.evaluate \
+    -n 2000 \
+    --alg_name FT \
+    --window_sizes "5" \
     --ds_name cf \
     --model_name EleutherAI/gpt-j-6B \
     --run 1 \
@@ -53,14 +78,6 @@ python -m experiments.evaluate \
     --norm_constraint 1e-4 \ 
     --kl_factor .0625
 ```
-
-Add the following flags for each variation of the experiments:
-
-- Error Injection: no flag
-- Tracing Reversal: `--tracing_reversal`
-- Fact Erasure: `--tracing_reversal`
-- Fact Amplification: `--tracing_reversal`
-- Tracing Reversal: `--tracing_reversal`
 
 ## Data Analysis
 

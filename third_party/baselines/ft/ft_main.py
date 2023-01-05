@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Tuple
 import torch
 import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import GPTJForCausalLM, GPT2Model
 
 from experiments.causal_trace import find_token_range, simple_make_inputs, corrupted_forward_pass
 from util import nethook
@@ -36,9 +37,13 @@ def apply_ft_to_model(
     # get more ft arguments; subj idx for embedding finetuning, number of times to repeat sample for optimization under noised subjects, and 
     if min(hparams.layers) == -1 and hparams.FT_subj_embeds:
         assert len(requests) == 1
-        subject = requests[0]['subject']
-        subject_idx = tok.encode(subject)
-        embeds_subj_idx = np.array(subject_idx)
+        record = requests[0]
+        subject = record['subject']
+        prompt_str = record["prompt"].format(subject)
+        # subject_idx = tok.encode(subject)
+        # embeds_subj_idx = np.array(subject_idx)
+        e_range = find_token_range(tok, substring=subject, prompt_str=prompt_str)
+        embeds_subj_idx = tok.encode(prompt_str)[e_range[0]:e_range[1]]
     else:
         embeds_subj_idx = None
     num_noise_samples = kwargs.pop('num_noise_samples', None)
@@ -86,6 +91,7 @@ def execute_ft(
     Invariant: model at beginning of function == model at end of function
     """
     patience_counter = 0
+    embeddings_only = min(hparams.layers) == -1 and len(hparams.layers) == 1
 
     # Update target and print info
     requests = deepcopy(requests)
@@ -182,11 +188,18 @@ def execute_ft(
                 loss.backward()
                 # zero out grad for embeds
                 if embedding_token_idx is not None:
-                    embeddings = [v for v in weights.values()][0]
+                    if isinstance(model, GPTJForCausalLM):
+                        embeddings = [v for v in weights.values()][0]
+                        # embeddings = model.transformer.wte.weight
+                    elif isinstance(model, GPT2Model):
+                        raise NotImplementedError("what are are GPT2 embeddings named? need to specify")
+                    else:
+                        raise NotImplementedError("need to specify embeddings weight for the model being used")
                     n_embeds = embeddings.size(0)
                     non_subj_embeds = np.setdiff1d(np.arange(n_embeds), embedding_token_idx)
                     embeddings.grad[non_subj_embeds,:] = 0
                 opt.step()
+                opt.zero_grad()
 
             if args.weight_based_tracing:
                 if it <= 5 or it % 10 == 0:
@@ -195,7 +208,7 @@ def execute_ft(
                     print("supervision: ", hidden_state_supervision[0,0,last_subj_ind,1])
                     print("grad: ", model.transformer.h[0].mlp.fc_out.weight.grad[1])
                     print("weight: ", model.transformer.h[0].mlp.fc_out.weight[1])
-                    import pdb; pdb.set_trace()    
+                    import pdb; pdb.set_trace()  
 
             if type(hparams.norm_constraint) is float:
                 eps = hparams.norm_constraint
@@ -224,6 +237,18 @@ def execute_ft(
                 patience_counter = 0
 
     deltas = {k: (weights[k] - weights_copy[k]).detach() for k in weights}
+    if embeddings_only:
+        assert len(deltas.keys()) == 1
+        for k in deltas.keys():
+            non_subj_embeds_idx = np.setdiff1d(np.arange(n_embeds), embedding_token_idx)
+            non_subj_embeds_after = weights[k][non_subj_embeds_idx,:]
+            non_subj_embeds_before = weights_copy[k][non_subj_embeds_idx,:]
+            subj_embeds_after = weights[k][embedding_token_idx,:]
+            subj_embeds_before = weights_copy[k][embedding_token_idx,:]
+        change_in_subj = (subj_embeds_after - subj_embeds_before).norm(2)
+        change_in_non_subj = (non_subj_embeds_after - non_subj_embeds_before).norm(2)
+        print(f"Norm change in subj embedddings: {change_in_subj:.2f}")
+        print(f"Norm change in non subj embedddings: {change_in_non_subj:.2f}")
 
     # Restore state of original model
     with torch.no_grad():

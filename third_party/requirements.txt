@@ -3,9 +3,13 @@ python-dotenv==0.19.2
 git+https://github.com/kmeng01/transformers-colab@allennlp-compat
 accelerate==0.10.0
 unidecode
-hydra-core==1.1.1 higher==0.2.1 allennlp==2.9.2
+hydra-core==1.1.1 
+higher==0.2.1 
+allennlp==2.9.2
 einops==0.4.0
 click==8.0.3
 tensorboard
-tokenizers==0.10.3
 transformers==4.21.0
+tokenizers==0.11.2
+matplotlib
+

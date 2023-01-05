@@ -39,8 +39,9 @@ from util.fewshot_utils import first_appearance_fewshot_accuracy_sum, fewshot_ac
 
 
 # globals
-CODE_DIR='/home/peterhase/belief-loc'
-BASE_DIR='/home/peterhase'
+CODE_DIR='/home/peter/private/belief-localization/third_party'
+BASE_DIR='/home/peter/private/belief-localization'
+MODEL_DIR='/playpen/peter/models'
 
 # functions
 def load_counterfact_dataset(args):
@@ -328,7 +329,6 @@ def causal_tracing_loop(args, experiment_name, task_name, split_name, model_name
             print("pred: ", preds)
             print("label: ", label)
         is_correct = fewshot_accuracy_sum(preds, [label])
-<<<<<<< PATCH SET (eb48a5 staging for public release)
       if correctness_filter is True:
         if not is_correct:
           print(f"skipping batch {batch_num}, point {data_point_id}, as it is wrongly predicted")
@@ -500,11 +500,12 @@ if __name__ == "__main__":
         mem_usage = True
 
         if '20b' not in model_name:
-            mt = ModelAndTokenizer(model_name, low_cpu_mem_usage=mem_usage, torch_dtype=torch_dtype)
+            mt = ModelAndTokenizer(model_name, low_cpu_mem_usage=mem_usage, torch_dtype=torch_dtype, cache_dir=MODEL_DIR)
             torch.cuda.empty_cache()
             mt.model.eval().cuda()
             mt.tokenizer.add_special_tokens({'pad_token' : mt.tokenizer.eos_token})
         else:
+            raise RuntimeError("20b model does not load properly across devices")
             from transformers import GPTNeoXForCausalLM, GPTNeoXTokenizerFast
             model = GPTNeoXForCausalLM.from_pretrained("EleutherAI/gpt-neox-20b", 
                                                         device_map={
@@ -582,264 +583,3 @@ if __name__ == "__main__":
     print(f"Saving results at {save_path}")
     all_results_df.to_csv(save_path, index=False)
     print("results_df shape: ", all_results_df.shape)
-=======
-        import pdb; pdb.set_trace()
-      if correctness_filter is True:
-        if not is_correct:
-          print(f"skipping batch {batch_num}, point {data_point_id}, as it is wrongly predicted")
-          continue
-    # get tracing output to explain
-    if explain_quantity == 'label':
-      tracing_target = label
-    elif explain_quantity == 'score_pred':
-      tracing_target = preds[0]
-    else:
-      tracing_target = None
-
-    # start causal tracing loop
-    if print_examples > 0 and batch_num <= print_examples:
-      printing=True
-    else:
-      printing=False
-    time_per_point = (time.time()-start) / (batch_num-skipped) if (batch_num-skipped) > 0 else -1
-    print(f"Point {batch_num}, id {data_point_id}, time/point: {format_time(time_per_point)}")
-    if printing:
-      print("Full query:\n", query_input)
-      print("subject to noise: ", subject)
-      print("target tokens: ", label)
-      print("tracing output to be explained: ", tracing_target)
-      print("pred: ", preds)
-      print("correct: ", is_correct)
-
-    # check_corruption_effects means we 
-    if check_corruption_effects:
-      high_score, low_score = get_high_and_low_scores(
-        mt, query_input, subject, target=tracing_target, samples=num_samples, noise=noise_sd, 
-      )
-      diff = high_score-low_score
-      print(f"high score: {high_score:.2f}, low_score: {low_score:.2f}, diff: {diff:.2f}\n")
-      if min_pred_prob > 0:
-        if high_score < min_pred_prob:
-          print(f"skipping batch {batch_num}, point {data_point_id}, with too small a pred prob of {high_score:.3f}")
-          continue
-      if min_corruption_effect > 0:
-        if diff < min_corruption_effect:
-          print(f"skipping batch {batch_num}, point {data_point_id}, with too small a corruption effect of {diff:.3f}")
-          continue
-
-    kinds = [restore_module] if restore_module!=None else [None, "mlp", "attn"]
-    for kind in kinds:
-      # potentially skip if exists
-      if not overwrite:
-        save_path = f"{BASE_DIR}/results/{_model_name}/traces/{experiment_name}_{data_point_id}_{kind}.csv"
-        if os.path.exists(save_path):
-          if printing:
-            print(f"skipping batch {batch_num}, point {data_point_id}, as it is already written")
-          skipped += 1
-          continue
-      if printing: 
-        print("starting module: ", kind)
-      
-      # CALCULUATE HIDDEN FLOW
-      results_dict = calculate_hidden_flow(
-        mt, query_input, subject, target=tracing_target, samples=num_samples, noise=noise_sd, window=window_size, kind=kind,
-      )
-      # add variables to results_dict
-      results_dict['input_id'] = data_point_id
-      results_dict['label_str'] = label
-      results_dict['correct_prediction'] = is_correct
-      results_df = results_dict_to_df(results_dict, mt.tokenizer, experiment_name, task_name, split_name)
-      if printing:
-        max_score = results_dict['scores'].max()
-        print(f"Max pred: {max_score.item():.4f}")
-        print(f"Corrupted pred: {results_dict['low_score']:.4f}")
-      causal_tracing_results.append(results_df)
-      # plot and save results (both results_dict, for their plotting code, and the results_df, for ours)
-      if save_plots:
-        plot_name = f"{experiment_name}_plot{data_point_id}_{kind}.pdf"
-        save_path = os.path.join(f'{BASE_DIR}/results/{_model_name}/traces', plot_name) if plot_name else None 
-        print(f"saving plot at {save_path}")
-        plot_trace_heatmap(results_dict, show_plot=show_plots, savepdf=save_path, modelname=_model_name)
-        save_path = f"{BASE_DIR}/results/{_model_name}/traces/{experiment_name}_{data_point_id}_{kind}.npz"
-        if printing:
-          print(f"saving results at {save_path}")
-        np.savez(save_path, results_dict)
-        results_df.to_csv(save_path.replace('npz', 'csv'), index=False)
-    del batch, input, label, subject, query_input
-  # make results dfs
-  if len(causal_tracing_results) > 0:
-    results_df = pd.concat([result_df for result_df in causal_tracing_results])
-  else:
-    results_df = None
-  full_prompt = format_prompt_from_df(prompt_data, "{test_input}", answers=answers, instructions=instructions, cot_reasons=cot_reasons, separator='\n', template_id=template_id)
-  metadata_df = pd.DataFrame({
-      'exp_name': [exp_name],
-      'task_name': [task_name],
-      'k': [k],
-      'cot' : [cot_reasons is not None],
-      'exact_prompt': [full_prompt]
-  })
-  # make metadata for df
-  print("Done! Runtime: ", format_time(time.time()-start))
-  return results_df, metadata_df
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model_name",
-        choices=["gpt2-medium", "gpt2-large", "gpt2-xl", "EleutherAI/gpt-j-6B"],
-        default="gpt2-xl",
-        help="Model to edit.",
-        required=True,
-    )
-    parser.add_argument(
-        "--ds_name",
-        choices=["counterfact", "zsre"],
-        default="counterfact",
-        help="Dataset to perform evaluations on. Either CounterFact (cf) or zsRE (zsre).",
-    )
-    parser.add_argument(
-        "--window_sizes",
-        type=str,
-        default='1',
-        help="Window sizes separted by spaces to use for editing method",
-    )
-    parser.add_argument(
-        "--dataset_size_limit",
-        "-n",
-        type=int,
-        default=1000,
-        help="Truncate CounterFact to first n records.",
-    )
-    parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Overwrite previous experiment results",
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="More printing",
-    )
-    parser.add_argument(
-        "--run",
-        type=int,
-        default=1,
-        choices=[0,1],
-    )
-    parser.add_argument(
-        "--gpu",
-        type=str,
-        default="0",
-    )
-    parser.set_defaults(verbose=False, overwrite=False)
-    args = parser.parse_args()
-
-    # set device and seed
-    device = torch.device(f"cuda:{args.gpu}")
-    torch.cuda.set_device(device)
-    RANDOM_SEED=1
-    np.random.seed(RANDOM_SEED)
-    torch.random.manual_seed(RANDOM_SEED)
-    torch.cuda.manual_seed_all(RANDOM_SEED)
-
-    # run experiment
-    _model_name = os.path.split(args.model_name)[-1]
-    if args.run:
-        torch.set_grad_enabled(False)
-
-        model_name = args.model_name
-        
-        torch_dtype = torch.float16 if '20b' in model_name else None
-        mem_usage = True
-
-        if '20b' not in model_name:
-            mt = ModelAndTokenizer(model_name, low_cpu_mem_usage=mem_usage, torch_dtype=torch_dtype)
-            torch.cuda.empty_cache()
-            mt.model.eval().cuda()
-            mt.tokenizer.add_special_tokens({'pad_token' : mt.tokenizer.eos_token})
-        else:
-            from transformers import GPTNeoXForCausalLM, GPTNeoXTokenizerFast
-            model = GPTNeoXForCausalLM.from_pretrained("EleutherAI/gpt-neox-20b", 
-                                                        device_map={
-                                                            'embed_out' : 0,
-                                                            'gpt_neox.embed_in' : 0,
-                                                            'gpt_neox.layers': 1,
-                                                            'gpt_neox.final_layer_norm' : 0,
-                                                        },
-                                                        low_cpu_mem_usage=False,
-                                                        torch_dtype=torch_dtype)
-            torch.cuda.empty_cache()
-            model.eval().cuda()
-            tokenizer = GPTNeoXTokenizerFast.from_pretrained("EleutherAI/gpt-neox-20b")
-            mt = ModelAndTokenizer(model=model, tokenizer=tokenizer, torch_dtype=torch_dtype)
-
-        os.makedirs(f'{BASE_DIR}/results/{_model_name}', exist_ok=True)    
-        os.makedirs(f'{BASE_DIR}/results/{_model_name}/traces', exist_ok=True)    
-        
-    # begin tracing
-    template_id = 8
-    k = 0
-    restore_module = None
-    ovr_exp_name = f"{_model_name}_{args.ds_name}_k{k}_sd{RANDOM_SEED}_tracing_sweep_n{args.dataset_size_limit}"
-    print("Starting experiment: ", ovr_exp_name)
-
-    if args.ds_name == 'counterfact':
-        use_data = load_counterfact_dataset(args)
-    if args.ds_name == 'factual':
-        use_data = load_factual_dataset(args)
-    prompt_ex, eval_data = pull_prompt_from_data(use_data, k)
-
-    # trace args
-    num_samples = 10
-    window_sizes = [int(x) for x in args.window_sizes.split()]
-    if 'gpt2-xl' in args.model_name:
-        noise_sd = .1
-        max_decode_steps=36
-    elif 'gpt-j-6B' in args.model_name:
-        # they use .025 (use to recreate orig plots), though it seems like 3*sd is .094, and 3*sd is a rule they use elsewhere.
-        noise_sd = .094
-        max_decode_steps=36
-    elif 'neox' in args.model_name:
-        noise_sd = .03
-        max_decode_steps=24
-    else:
-        noise_sd = .01
-        max_decode_steps=36
-
-    results_dfs = []
-    for window_size in window_sizes:
-        exp_name = f"{_model_name}_{args.ds_name}_k{k}_wd{window_size}_sd{RANDOM_SEED}"
-        if args.run:
-            results_df, metadata_df = causal_tracing_loop(args, exp_name, args.ds_name, "", args.model_name, 
-                                        mt, eval_data,
-                                        num_samples, noise_sd, restore_module, window_size, 
-                                        max_decode_steps=max_decode_steps,
-                                        explain_quantity='label',
-                                        show_plots=False, 
-                                        save_plots=True,
-                                        k=k, 
-                                        answers=None,
-                                        n=args.dataset_size_limit, 
-                                        random_seed=RANDOM_SEED, 
-                                        prompt_data=prompt_ex,
-                                        template_id=template_id, 
-                                        print_examples=10,
-                                        overwrite=args.overwrite,
-                                        correctness_filter=True)
-        results_df = make_results_df(_model_name, exp_name, count=args.dataset_size_limit)
-        results_df['trace_window_size'] = window_size
-        results_dfs.append(results_df)
-
-    all_results_df = pd.concat(results_dfs)
-    save_path = f'{BASE_DIR}/results/{ovr_exp_name}.csv'
-    print(f"Saving results at {save_path}")
-    all_results_df.to_csv(save_path, index=False)
-    print("results_df shape: ", all_results_df.shape)
-    # upload results csv to google bucket
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket('research-brain-belief-localization-xgcp')
-    blob = bucket.blob(f'output/{ovr_exp_name}.csv')
-    blob.upload_from_filename(save_path)
->>>>>>> BASE      (9df1dd Updates for releasing the repository)

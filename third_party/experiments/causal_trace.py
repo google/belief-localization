@@ -500,6 +500,7 @@ class ModelAndTokenizer:
         tokenizer=None,
         low_cpu_mem_usage=False,
         torch_dtype=None,
+        cache_dir=None,
     ):
         if tokenizer is None:
             assert model_name is not None
@@ -507,7 +508,7 @@ class ModelAndTokenizer:
         if model is None:
             assert model_name is not None
             model = AutoModelForCausalLM.from_pretrained(
-                model_name, low_cpu_mem_usage=low_cpu_mem_usage, torch_dtype=torch_dtype,
+                model_name, low_cpu_mem_usage=low_cpu_mem_usage, torch_dtype=torch_dtype, cache_dir=cache_dir,
             )
             nethook.set_requires_grad(False, model)
             model.eval().cuda()

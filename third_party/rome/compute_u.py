@@ -14,7 +14,6 @@ from .rome_hparams import ROMEHyperParams
 # Cache variables
 inv_mom2_cache = {}
 
-
 def get_inv_cov(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,

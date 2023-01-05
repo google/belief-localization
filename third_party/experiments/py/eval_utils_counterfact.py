@@ -153,40 +153,13 @@ def test_batch_prediction(
     # inputs are inteleaved in order. so prefixes are [rewrite, paraphrase, neighbor, attribute]
     # new target is first, then baseline is second for each prefix
     # double up each prefix after making targets
+
     targets = [target_new, request_baseline] * len(prefixes)
     repeated_prefixes = list(itertools.chain(*[[prefix, prefix] for prefix in prefixes]))
-    batch = make_inputs(tok, repeated_prefixes, targets)
+    batch = make_inputs(tok, repeated_prefixes, targets)    
     with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing or args.weight_based_tracing else nullcontext():
         results = score_from_batch(model, batch, return_log_probs=True)
         nll = -results
-
-    # prefix_lens = [len(n) for n in tok(prefixes)["input_ids"]]
-    # prompt_tok = tok(
-    #     [
-    #         f"{prefix} {suffix}"
-    #         for prefix in prefixes
-    #         for suffix in [target_new, request_baseline]
-    #     ],
-    #     padding=True,
-    #     return_tensors="pt",
-    # ).to("cuda")
-
-    # a_tok, b_tok = (tok(f" {n}")["input_ids"] for n in [target_new, request_baseline])
-    # choice_a_len, choice_b_len = (len(n) for n in [a_tok, b_tok])
-
-    # with nethook.TraceDict(model, [embed_layername], edit_output=noise_embeddings) if args.fact_forcing or args.weight_based_tracing else nullcontext():
-    #     logits = model(**prompt_tok).logits
-
-    # results = np.zeros((logits.size(0),), dtype=np.float32)
-
-    # for i in range(logits.size(0)):
-    #     cur_len = choice_a_len if i % 2 == 0 else choice_b_len
-    #     for j in range(cur_len):
-    #         cur_tok = (a_tok if i % 2 == 0 else b_tok)[j]
-    #         results[i] += -torch.nn.functional.log_softmax(
-    #             logits[i, prefix_lens[i // 2] + j - 1, :], dim=0
-    #         )[cur_tok].item()
-    #     results[i] /= cur_len
 
     return [
         {"target_new": nll[i].item(), "request_baseline": nll[i + 1].item()}

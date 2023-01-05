@@ -235,20 +235,6 @@ def first_appearance_fewshot_accuracy_sum(preds, labels, extract_answers, trigge
   else:
     return n_correct, np.array(correct_indicators)
 
-def get_hendrycks_em(preds, labels, answers, group_by):
-  # calculate EM from Hendrycks et al paper, or return None if preds not cleanly divisible by grouping factor
-  assert len(preds) == len(labels)
-  if len(preds) % group_by == 0:
-    ovr_acc, acc_vector = fewshot_accuracy_sum(preds, labels, extract_answers=answers, return_vec=True)
-    n_chunks = len(preds) / group_by
-    group_idx = np.array_split(np.arange(len(preds)), n_chunks)
-    em_indicators = [sum(acc_vector[chunk_idx]) for chunk_idx in group_idx]
-    em_indicators = [em_indicators[i] == group_by for i in range(len(em_indicators))]
-    hendrycks_em = np.mean(em_indicators)
-  else:
-    hendrycks_em = -1
-  return hendrycks_em
-
 def compute_prop_invalid_preds(preds, answers):
   if answers is None or isinstance(answers, np.ndarray):
     return -1
