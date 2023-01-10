@@ -135,6 +135,8 @@ def get_override_hparams(args, window_size, central_layer, alg_name):
   return return_dict
 
 def sweep_experiment_name(args, model_name, alg_name, ds_name, sweep_params):
+  if args.fact_token == "last":
+    alg_name += "-last"
   exp_name = f'{model_name}_{alg_name}_outputs_{ds_name}_editing_sweep'  
   for k,v in sweep_params.items():
     _v = str(v).replace(", ", "-")
