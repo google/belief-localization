@@ -1,4 +1,4 @@
-# What are you really editing?
+# Does Localization Inform Editing?
 
 This repository includes code for the paper [Does Localization Inform Editing? Surprising Differences in Causality-Based Localization vs. Knowledge Editing in Language Models](https://arxiv.org/pdf/2301.04213.pdf). It is built on top of code from the MEMIT repository [here](https://github.com/kmeng01/memit).
 
