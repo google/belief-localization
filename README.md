@@ -74,9 +74,10 @@ python3 -m experiments.evaluate \
     --model_name EleutherAI/gpt-j-6B \
     --run 1 \
     --edit_layer -2 \
-    --correctness_filter 1 \ 
-    --norm_constraint 1e-4 \ 
-    --kl_factor .0625
+    --correctness_filter 1 \
+    --norm_constraint 1e-4 \
+    --kl_factor .0625 \
+    --fact_erasure
 ```
 
 ## Data Analysis
