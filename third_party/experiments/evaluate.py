@@ -647,7 +647,7 @@ if __name__ == "__main__":
         "--window_sizes",
         type=str,
         default='1',
-        help="Window sizes separted by spaces to use for editing method",
+        help="Window sizes separated by spaces to use for editing method",
     )
     parser.add_argument(
         "--dataset_size_limit",
