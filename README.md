@@ -10,7 +10,7 @@ This repository includes code for the paper [Does Localization Inform Editing? S
 
 ## Installation
 
-For needed packages, first create a virtual environment or a conda environment (via `third_party/scripts/setup_conda.sh`), then run:
+For needed packages, first create a virtual environment via `python3 -m venv env` and activate it (`source env/bin/activate`), then run:
 ```
 cd third_party
 pip install -r requirements.txt  
