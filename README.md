@@ -19,7 +19,9 @@ python -c "import nltk; nltk.download(punkt)"
 
 ## Causal Tracing
 
-We gather causal tracing results from the first 2000 points in the CounterFact dataset, filtering to 652 correctly completed prompts when using GPT-J. The `window_sizes` argument controls which tracing window sizes to use. To reproduce all GPT-J results in the paper, run tracing experiments with for window sizes 10, 5, 3, and 1. This can be done with the following command:
+We gather causal tracing results from the first 2000 points in the CounterFact dataset, filtering to 652 correctly completed prompts when using GPT-J. The `window_sizes` argument controls which tracing window sizes to use. To reproduce all GPT-J results in the paper, run tracing experiments with for window sizes 10, 5, 3, and 1. This can be done with the following steps.
+
+First, set the global variables in `experiments/tracing.py` (i.e. `CODE_DIR`, `BASE_DIR`, and `MODEL_DIR`) to desired values. Then, run:
 
 ```
 python -m experiments.tracing \
@@ -39,6 +41,8 @@ We check the relationship between causal tracing localization and editing perfor
 - MEMIT (which edits five layers)
 
 The editing problems include the original model editing problem specified by the CounterFact dataset (changing the prediction for a given input), as well as a few variants mentioned below. 
+
+To run the default Error Injection editing problem using ROME with GPT-J, first set the global variabes in `experiments/evaluate.py` (i.e. `CODE_DIR`, `BASE_DIR`, and `MODEL_DIR`) to desired values. Then, run:
 
 ```
 python3 -m experiments.evaluate \
