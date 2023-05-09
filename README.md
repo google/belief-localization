@@ -1,6 +1,6 @@
-# What are you really editing?
+# Does Localization Inform Editing?
 
-This repository includes code for the paper [Does Localization Inform Editing? Surprising Differences in Where Knowledge Is Stored vs. Can Be Injected in Language Models](https://arxiv.org/abs/tbd). It is built on top of code from the MEMIT repository [here](https://github.com/kmeng01/memit).
+This repository includes code for the paper [Does Localization Inform Editing? Surprising Differences in Causality-Based Localization vs. Knowledge Editing in Language Models](https://arxiv.org/pdf/2301.04213.pdf). It is built on top of code from the MEMIT repository [here](https://github.com/kmeng01/memit).
 
 ## Table of Contents
 1. [Installation](#installation)
@@ -10,7 +10,7 @@ This repository includes code for the paper [Does Localization Inform Editing? S
 
 ## Installation
 
-For needed packages, first create a virtual environment or a conda environment (via `third_party/scripts/setup_conda.sh`).
+For needed packages, first create a virtual environment via `python3 -m venv env` and activate it (`source env/bin/activate`).
 
 Then, install an appropriate version of `torch` for your system. Next, install the remaining requirements:
 ```
@@ -21,7 +21,9 @@ python -c "import nltk; nltk.download('punkt')"
 
 ## Causal Tracing
 
-We gather causal tracing results from the first 2000 points in the CounterFact dataset, filtering to 652 correctly completed prompts when using GPT-J. The `window_sizes` argument controls which tracing window sizes to use. To reproduce all GPT-J results in the paper, run tracing experiments with for window sizes 10, 5, 3, and 1. This can be done with the following command:
+We gather causal tracing results from the first 2000 points in the CounterFact dataset, filtering to 652 correctly completed prompts when using GPT-J. The `window_sizes` argument controls which tracing window sizes to use. To reproduce all GPT-J results in the paper, run tracing experiments with for window sizes 10, 5, 3, and 1. This can be done with the following steps.
+
+First, set the global variables in `experiments/tracing.py` (i.e. `CODE_DIR`, `BASE_DIR`, and `MODEL_DIR`) to desired values. Then, run:
 
 ```
 python -m experiments.tracing \
@@ -62,6 +64,8 @@ We check the relationship between causal tracing localization and editing perfor
 - MEMIT (which edits five layers)
 
 The editing problems include the original model editing problem specified by the CounterFact dataset (changing the prediction for a given input), as well as a few variants mentioned below. 
+
+To run the default Error Injection editing problem using ROME with GPT-J, first set the global variabes in `experiments/evaluate.py` (i.e. `CODE_DIR`, `BASE_DIR`, and `MODEL_DIR`) to desired values. Then, run:
 
 ```
 python3 -m experiments.evaluate \
@@ -114,9 +118,10 @@ python3 -m experiments.evaluate \
     --model_name EleutherAI/gpt-j-6B \
     --run 1 \
     --edit_layer -2 \
-    --correctness_filter 1 \ 
-    --norm_constraint 1e-4 \ 
-    --kl_factor .0625
+    --correctness_filter 1 \
+    --norm_constraint 1e-4 \
+    --kl_factor .0625 \
+    --fact_erasure
 ```
 
 ## Data Analysis
