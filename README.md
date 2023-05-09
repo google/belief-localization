@@ -10,11 +10,13 @@ This repository includes code for the paper [Does Localization Inform Editing? S
 
 ## Installation
 
-For needed packages, first create a virtual environment or a conda environment (via `third_party/scripts/setup_conda.sh`), then run:
+For needed packages, first create a virtual environment or a conda environment (via `third_party/scripts/setup_conda.sh`).
+
+Then, install an appropriate version of `torch` for your system. Next, install the remaining requirements:
 ```
 cd third_party
 pip install -r requirements.txt  
-python -c "import nltk; nltk.download(punkt)"
+python -c "import nltk; nltk.download('punkt')"
 ```
 
 ## Causal Tracing
@@ -28,6 +30,27 @@ python -m experiments.tracing \
     --model_name EleutherAI/gpt-j-6B \
     --run 1 \
     --window_sizes "10 5 3 1"
+```
+
+To get results for ZSRE, run:
+
+```
+python -m experiments.tracing \
+    -n 2000 \
+    --ds_name zsre \
+    --model_name EleutherAI/gpt-j-6B \
+    --run 1 \
+    --window_sizes "5"
+```
+
+```
+python -m experiments.tracing \
+    -n 2000 \
+    --ds_name zsre \
+    --model_name gpt2-xl \
+    --run 1 \
+    --window_sizes "5" \
+    --gpu 1 
 ```
 
 ## Model Editing Evaluation
@@ -50,6 +73,23 @@ python3 -m experiments.evaluate \
     --run 1 \
     --edit_layer -2 \
     --correctness_filter 1 \
+    --norm_constraint 1e-4 \
+    --kl_factor 1 \
+    --fact_token subject_last
+```
+
+To run an experiment with ZSRE, use:
+
+```
+python3 -m experiments.evaluate \
+    -n 2000 \
+    --alg_name ROME \
+    --window_sizes "1" \
+    --ds_name zsre \
+    --model_name EleutherAI/gpt-j-6B \
+    --run 1 \
+    --edit_layer 5 \
+    --correctness_filter 0 \
     --norm_constraint 1e-4 \
     --kl_factor 1 \
     --fact_token subject_last

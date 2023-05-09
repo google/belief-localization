@@ -22,6 +22,7 @@ def compute_rewrite_quality_zsre(
     record: typing.Dict,
     snips: AttributeSnippets,
     vec: TfidfVectorizer,
+    skip_generation_tests: bool,
 ) -> typing.Dict:
     """
     Given a rewritten model, computes generalization and specificity metrics for
@@ -33,10 +34,12 @@ def compute_rewrite_quality_zsre(
     :param record: CounterFact dataset record
     :paran snips: ???
     :param vec: ???
+    skip_generation_tests: only for consistency with eval_utils_counterfact, doesn't do anything
     :return: Dictionary containing rewriting metrics
     """
 
     # First, unpack rewrite evaluation record.
+    # import pdb; pdb.set_trace()
     subject, target_new, target_true = (
         record["requested_rewrite"][x] for x in ["subject", "target_new", "target_true"]
     )

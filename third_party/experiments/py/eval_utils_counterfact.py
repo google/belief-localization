@@ -31,6 +31,7 @@ def compute_rewrite_quality_counterfact(
     snips: AttributeSnippets,
     vec: TfidfVectorizer,
     skip_generation_tests: bool,
+    ds_name='cf',
 ) -> typing.Dict:
     """
     Given a rewritten model, computes generalization and specificity metrics for
@@ -55,6 +56,15 @@ def compute_rewrite_quality_counterfact(
     neighborhood_prompts = record["neighborhood_prompts"]
     attribute_prompts = record["attribute_prompts"]
     generation_prompts = record["generation_prompts"]
+
+    if ds_name == 'zsre':
+        # just use the first neighborhood prompt. The others incrementally add in tokens from an alternative predicted label
+        # But the way we calculate the target probability, we don't need to do this
+        neighborhood_prompts = [
+            el["prompt"].format(record["requested_rewrite"])
+            for el in neighborhood_prompts[:1]
+        ]
+        neighborhood_prompts = [prompt.replace("nq question:", "Question:") + " Answer:" for prompt in neighborhood_prompts]
 
     # Form a list of lists of prefixes to test.
     prob_prompts = [
@@ -83,7 +93,7 @@ def compute_rewrite_quality_counterfact(
             ]
         )
     }
-    if snips is not None:
+    if snips is not None and not skip_generation_tests:
         # Gather reference texts
         rel_id = record["requested_rewrite"]["relation_id"]
         consistency_texts = [x["text"] for x in snips[rel_id][target_new["id"]]]
@@ -153,7 +163,6 @@ def test_batch_prediction(
     # inputs are inteleaved in order. so prefixes are [rewrite, paraphrase, neighbor, attribute]
     # new target is first, then baseline is second for each prefix
     # double up each prefix after making targets
-
     targets = [target_new, request_baseline] * len(prefixes)
     repeated_prefixes = list(itertools.chain(*[[prefix, prefix] for prefix in prefixes]))
     batch = make_inputs(tok, repeated_prefixes, targets)    

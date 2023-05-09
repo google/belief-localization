@@ -609,48 +609,48 @@ def plot_trace_heatmap(result, savepdf=None, show_plot=True, title=None, xlabel=
     assert len(labels) == differences.shape[0], "num tokens doesnt match differences size"
     v_size = 3.5 if len(labels) < 10 else 4.1
     h_size = 2.8 if differences.shape[1] < 30 else 3.2
-    with plt.rc_context(rc={"font.family": "Times New Roman"}):
-        fig, ax = plt.subplots(figsize=(h_size, v_size), dpi=300)
-        h = ax.pcolor(
-            differences,
-            cmap={None: "Purples", "None": "Purples", "mlp": "Greens", "attn": "Reds"}[
-                kind
-            ],
-            vmin=low_score,
-            vmax=high_score,
-        )
-        ax.invert_yaxis()
-        ax.set_yticks([0.5 + i for i in range(len(differences))])
-        ax.set_xticks([0.5 + i for i in range(0, differences.shape[1] - 6, 5)])
-        ax.set_xticklabels(list(range(0, differences.shape[1] - 6, 5)))
-        ax.set_yticklabels(labels)
-        if not kind:
-            title = "Impact of restoring state after corrupted input"
-            xlab = f"single restored layer within {modelname}"
-        else:
-            kindname = "MLP" if kind == "mlp" else "Attn"
-            title = f"Impact of restoring {kindname} after corrupted input"
-            xlab = f"center of interval of {window} restored {kindname} layers"
-        xlab += f"\n orig prob: {round(base_score, 3)}, noise prob: {round(low_score, 3)}"
-        ax.set_xlabel(xlab)
-        cb = plt.colorbar(h)
-        if title is not None:
-            ax.set_title(title, x=.5, y=1.01)
-            # ax.set_title(title, x=.5, y=1.1)
-        if xlabel is not None:
-            ax.set_xlabel(xlabel)
-        elif answer is not None:
-            # The following should be cb.ax.set_xlabel, but this is broken in matplotlib 3.5.1.
-            cb.ax.set_title(f"p({str(answer).strip()})", y=-.08, fontsize=10)
-            # cb.ax.set_title(f"p({str(answer).strip()})", y=-0.16, fontsize=10)
-        if savepdf:
-            os.makedirs(os.path.dirname(savepdf), exist_ok=True)
-            plt.savefig(savepdf, bbox_inches="tight")
-            if show_plot:
-              plt.show() 
-            plt.close()
-        elif show_plot:
-            plt.show()
+    # with plt.rc_context(rc={"font.family": "Times New Roman"}):
+    fig, ax = plt.subplots(figsize=(h_size, v_size), dpi=300)
+    h = ax.pcolor(
+        differences,
+        cmap={None: "Purples", "None": "Purples", "mlp": "Greens", "attn": "Reds"}[
+            kind
+        ],
+        vmin=low_score,
+        vmax=high_score,
+    )
+    ax.invert_yaxis()
+    ax.set_yticks([0.5 + i for i in range(len(differences))])
+    ax.set_xticks([0.5 + i for i in range(0, differences.shape[1] - 6, 5)])
+    ax.set_xticklabels(list(range(0, differences.shape[1] - 6, 5)))
+    ax.set_yticklabels(labels)
+    if not kind:
+        title = "Impact of restoring state after corrupted input"
+        xlab = f"single restored layer within {modelname}"
+    else:
+        kindname = "MLP" if kind == "mlp" else "Attn"
+        title = f"Impact of restoring {kindname} after corrupted input"
+        xlab = f"center of interval of {window} restored {kindname} layers"
+    xlab += f"\n orig prob: {round(base_score, 3)}, noise prob: {round(low_score, 3)}"
+    ax.set_xlabel(xlab)
+    cb = plt.colorbar(h)
+    if title is not None:
+        ax.set_title(title, x=.5, y=1.01)
+        # ax.set_title(title, x=.5, y=1.1)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    elif answer is not None:
+        # The following should be cb.ax.set_xlabel, but this is broken in matplotlib 3.5.1.
+        cb.ax.set_title(f"p({str(answer).strip()})", y=-.08, fontsize=10)
+        # cb.ax.set_title(f"p({str(answer).strip()})", y=-0.16, fontsize=10)
+    if savepdf:
+        os.makedirs(os.path.dirname(savepdf), exist_ok=True)
+        plt.savefig(savepdf, bbox_inches="tight")
+        if show_plot:
+          plt.show() 
+        plt.close()
+    elif show_plot:
+        plt.show()
 
 
 def plot_all_flow(mt, prompt, subject=None):
@@ -850,6 +850,185 @@ def collect_embedding_tdist(mt, degree=3):
         return student
 
     return normal_to_student
+
+
+
+
+def trace_with_erasure(
+    model,            # The model
+    batch,            # A set of inputs
+    states_to_erase,  # A list of (token index, layername) triples to restore
+    pred_id,          # token id of answer probabilities to collect
+    # tokens_to_mix,  # Range of tokens to corrupt (begin, end)
+    noise=0,          # Level of noise to replace representaitons with, or to zero them out 0.1
+    trace_layers=None # List of traced outputs to return
+):
+    # NOTE()
+    # print(states_to_erase)
+    # print('pred_id', pred_id)
+    prng = numpy.random.RandomState(1)  # For reproducibility, use pseudorandom noise
+    erase_spec = defaultdict(list)
+    for t, l in states_to_erase:
+        erase_spec[l].append(t)
+
+    def untuple(x):
+        return x[0] if isinstance(x, tuple) else x
+
+    # Define the model-noising rule.
+    def erase_rep(x, layer):
+        if layer not in erase_spec:
+            return x
+        # If this layer is in the noise_spec, set the hidden state to noise/zero
+        # for selected tokens.
+        h = untuple(x)
+        for t in erase_spec[layer]:
+            # h[1:, t] = np.zeros_like(h[0, t])
+            h[1:, t] = noise * torch.from_numpy(
+                    prng.randn(1)
+                ).to(h.device)
+        return x
+
+    # With the erasing rules defined, run the erased model in inference.
+    additional_layers = [] if trace_layers is None else trace_layers
+    with torch.no_grad(), nethook.TraceDict(
+        model, list(erase_spec.keys()) + additional_layers,
+        edit_output=erase_rep
+    ) as td:
+        if 'target_indicators' not in batch:
+          outputs_exp = model(**batch)
+          assert pred_id is not None, "no targets provided, need to specify pred_id"
+          # get the predicted probability for the pred_id token of interest, averaged across noised forward paths
+          avg_erased_probs = torch.softmax(outputs_exp.logits[1:, -1, :], dim=1).mean(dim=0)[pred_id]
+          outputs = avg_erased_probs
+          # NOTE()
+          # orig = torch.softmax(outputs_exp.logits[0, -1, :], dim=1).mean(dim=0)[pred_id]
+          # print(f'no target_indicators\norig: {orig:3f}, erased: {avg_erased_probs:3f}\n\n')
+        else:
+          probs = score_from_batch(model, batch)
+          if states_to_erase == []:
+            print_probs = [round(p, 3) for p in probs[1:].cpu().numpy()]
+            # print("spread of corrupted probs: ", print_probs)
+          outputs = probs[1:].mean()
+          # NOTE()
+          # print(f'orig: {probs[0]:3f}, erased: {outputs:3f}')
+
+    # If tracing all layers, collect all activations together to return.
+    if trace_layers is not None:
+        all_traced = torch.stack(
+            [untuple(td[layer].output).detach().cpu() for layer in trace_layers], dim=2)
+        return outputs, all_traced
+
+    return outputs
+
+
+def trace_important_states_erasure(model, num_layers, batch, pred_id=None, noise=0.1, start_token_idx=0):
+    if 'target_indicators' in batch:
+      ntoks = batch["input_ids"].shape[1] - batch["target_indicators"].sum(-1)[0]
+    else:
+      ntoks = batch["input_ids"].shape[1]
+    table = []
+    for tnum in range(start_token_idx, ntoks):
+        row = []
+        for layer in range(1, num_layers):
+            print(f"tracing token {tnum}, layer {layer}", end='\r')
+            r = trace_with_erasure(
+                model,
+                batch,
+                [(tnum, layername(model, layer))],
+                pred_id,
+                noise=noise,
+            )
+            row.append(r)
+        table.append(torch.stack(row))
+    return torch.stack(table)
+
+
+def trace_important_window_erasure(
+    model, num_layers, batch, pred_id=None, kind=None, window=10, noise=0.1, start_token_idx=0,
+):
+    if 'target_indicators' in batch:
+      ntoks = batch["input_ids"].shape[1] - batch["target_indicators"].sum(-1)[0]
+    else:
+      ntoks = batch["input_ids"].shape[1]
+    table = []
+
+    for tnum in range(start_token_idx, ntoks):
+        row = []
+        for layer in range(1, num_layers):
+            print(f"tracing token {tnum}, layer {layer} for module type {kind}", end='\r')
+            layerlist = [
+                (tnum, layername(model, L, kind))
+                for L in range(
+                    max(1, layer - window // 2), min(num_layers, layer - (-window // 2))
+                )
+            ]
+            r = trace_with_erasure(
+                model, batch, layerlist, pred_id, noise=noise,
+            )
+            row.append(r)
+        table.append(torch.stack(row))
+    return torch.stack(table)
+
+
+def calculate_hidden_flow_erasure(
+    mt, prompt, target, samples=3, noise=0.1, window=10, output_type='probs', kind=None,
+):
+    """
+    Runs causal tracing over every token/layer combination in the network
+    and returns a dictionary numerically summarizing the results.
+
+    Args
+      target: str output to be explained
+    """
+    special_token_ids = [mt.tokenizer.eos_token_id, mt.tokenizer.bos_token_id, mt.tokenizer.pad_token_id]
+    assert isinstance(prompt, str)
+    if target is None:
+        preds, scores, _ = predict_model(mt, [prompt], max_decode_steps=2, score_if_generating=True)
+    else:
+        preds, scores, query_inputs = predict_model(mt, [prompt], answers=[target])
+    answer = preds[0]
+    base_score = scores[0].item()
+    pred_id = None
+    batch_size = (samples+1)
+    batch = make_inputs(mt.tokenizer, prompts=[prompt] * batch_size, targets=[answer] * batch_size)
+    if not kind:
+        differences = trace_important_states_erasure(
+            mt.model, mt.num_layers, batch, pred_id, noise=noise, start_token_idx=0,
+        )
+    else:
+        differences = trace_important_window_erasure(
+            mt.model,
+            mt.num_layers,
+            batch,
+            pred_id,
+            noise=noise,
+            window=window,
+            kind=kind,
+            start_token_idx=0,
+        )
+    differences = differences.detach().cpu().squeeze()
+    individual_tokens = [mt.tokenizer.decode([tok]) for idx, tok in enumerate(batch['query_ids'][0]) if (not tok in special_token_ids)]
+    # make a few last things to add to dict
+    if '\n' in individual_tokens: # assume prompting with examples separated by '\n'
+      reversed_labels = list(reversed(individual_tokens))
+      last_sep_idx = len(individual_tokens) - reversed_labels.index('\n') - 1
+      test_tokens = individual_tokens[(last_sep_idx+1):]
+    else:
+      test_tokens = individual_tokens
+    return dict(
+        scores=differences,
+        base_score=base_score,
+        high_score=max(base_score, differences.max().item()),
+        input_tokens=individual_tokens,
+        test_input_tokens=test_tokens,
+        test_input_str=prompt.split('\n')[-1],
+        answer=answer,
+        window=window,
+        kind=kind or "",
+    )
+
+
+
 
 
 if __name__ == "__main__":

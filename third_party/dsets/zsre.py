@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import numpy as np
 import torch
 from transformers import AutoTokenizer
 
@@ -16,7 +17,7 @@ class MENDQADataset:
     Project page: http://nlp.cs.washington.edu/zeroshot/
     """
 
-    def __init__(self, data_dir: str, tok: AutoTokenizer, *args, **kwargs):
+    def __init__(self, data_dir: str, tok: AutoTokenizer, size: int = None, *args, **kwargs):
         data_dir = Path(data_dir)
         zsre_loc = data_dir / "zsre_mend_eval.json"
         if not zsre_loc.exists():
@@ -27,22 +28,39 @@ class MENDQADataset:
         with open(zsre_loc, "r") as f:
             raw = json.load(f)
 
-        data = []
+        # get all possible answers
+        all_answers = []
         for i, record in enumerate(raw):
+            all_answers.append(record['answers'][0])
+
+        data = []
+        print("Loading zsre data...")
+        for i, record in enumerate(raw):
+            print(f"loading point {i}", end='\r')
             assert (
                 "nq question: " in record["loc"]
             ), f"Neighborhood prompt missing `nq question:`. Check for errors?"
             ans_toks = tok(" " + record["loc_ans"])["input_ids"]
+            true_answer = record["answers"][0]
+            eligible_alt_answers = np.setdiff1d(all_answers, true_answer)
+            # adjust prompt formatting a bit -- occurs for paraphrases later too
+            question = record["src"].replace(record["subject"], "{}")
+            prompt = f"Question: {question} Answer:"
             data.append(
                 {
                     "case_id": i,
                     "requested_rewrite": {
-                        "prompt": record["src"].replace(record["subject"], "{}"),
+                        "prompt": prompt,
                         "subject": record["subject"],
-                        "target_new": {"str": record["answers"][0]},
-                        "target_true": {"str": "<|endoftext|>"},
+                        # ROME paper uses editing to correct mistakes, unlike the CounterFact setting
+                        # "target_new": {"str": record["answers"][0]},
+                        # "target_true": {"str": "<|endoftext|>"},
+                        # even though error fixing is a better eval, we compatabilize with CounterFact
+                        # by setting the new target to a random entity
+                        "target_new": {"str": np.random.choice(eligible_alt_answers)},
+                        "target_true": {"str": true_answer},  
                     },
-                    "paraphrase_prompts": [record["rephrase"]],
+                    "paraphrase_prompts": [f"Question: {record['rephrase']} Answer:"],
                     "neighborhood_prompts": [
                         {
                             "prompt": record["loc"] + "?" + tok.decode(ans_toks[:i]),
@@ -54,6 +72,8 @@ class MENDQADataset:
                     "generation_prompts": [],
                 }
             )
+            if size is not None and i == size:
+                break
 
         self._data = data
 

@@ -4,7 +4,6 @@ import os
 import shutil
 import collections
 import time
-from google.cloud import storage
 from pathlib import Path
 from typing import Tuple, Union
 from contextlib import nullcontext
@@ -29,8 +28,6 @@ from dsets import (
 )
 from experiments.causal_trace import ModelAndTokenizer, score_from_batch, get_high_and_low_scores, plot_trace_heatmap
 from experiments.causal_trace import calculate_hidden_flow, layername, corrupted_forward_pass, find_token_range, make_inputs, simple_make_inputs, predict_model
-from experiments.py.eval_utils_counterfact import compute_rewrite_quality_counterfact
-from experiments.py.eval_utils_zsre import compute_rewrite_quality_zsre
 from rome import ROMEHyperParams, apply_rome_to_model
 from util import nethook
 from util.generate import generate_fast
@@ -75,6 +72,40 @@ def load_counterfact_dataset(args):
                                 'subject' : subjects,
                                 })
     return counterfact_data
+
+# functions
+def load_zsre_dataset(args, tokenizer, num_points):
+    zsre_inputs = MENDQADataset(DATA_DIR, tokenizer, size=num_points)
+    knowledge_inputs = []
+    knowledge_targets = []
+    generate_completions = False
+    gpt_completions = []
+    subjects = []
+    if args.verbose:
+        print('\n')
+    for id, record in enumerate(zsre_inputs):
+        if args.verbose:
+            print("starting record: ", id, end='\r')
+        rewrite_data = record['requested_rewrite']
+        prompt = rewrite_data['prompt'].format(rewrite_data['subject'])
+        target = rewrite_data['target_true']['str']
+        if generate_completions:
+            completion, _, _ = predict_model(mt, [prompt], max_decode_steps=10)
+            completion = completion[0]
+            if id < 30:
+              print(prompt, " -- ", completion)
+        else:
+            completion = ''
+        knowledge_inputs.append(prompt)
+        knowledge_targets.append(target)
+        gpt_completions.append(completion)
+        subjects.append(rewrite_data['subject'])
+    zsre_data = pd.DataFrame({'input': knowledge_inputs, 
+                                'label_str': knowledge_targets,
+                                'completion': gpt_completions,
+                                'subject' : subjects,
+                                })
+    return zsre_data
 
 def format_time(runtime):
   if runtime > 3600:
@@ -262,15 +293,12 @@ def causal_tracing_loop(args, experiment_name, task_name, split_name, model_name
                         trigger_phrase=None, print_examples=0, save_plots=True,
                         overwrite=False, 
                         correctness_filter=False,
-                        check_corruption_effects=False,
                         min_corruption_effect = 0,
                         min_pred_prob=0):
   """Runs causal tracing algorithm over a dataset provided in eval_data.
   args:
     explain_quantity: in ['label', 'score_pred', None], we explain p(explain_quantity)
       None means that you generate a prediction, 'score_pred' means you score to get pred
-    check_corruption_effects: instead of doing causal tracing, loop over the data and check
-      the effect of the subject noising step on the output. used for calibrating the noise size
   """
   # eval model and return a single row df with the results
   start = time.time()
@@ -302,6 +330,8 @@ def causal_tracing_loop(args, experiment_name, task_name, split_name, model_name
       subject = input
     elif 'fact' in task_name:
       subject = batch.subject.item()
+    elif 'zsre' in task_name:
+      subject = batch.subject.item()
     label = batch.label_str.item()
     query_input = format_prompt_from_df(prompt_data, 
                                       input, 
@@ -329,6 +359,7 @@ def causal_tracing_loop(args, experiment_name, task_name, split_name, model_name
             print("pred: ", preds)
             print("label: ", label)
         is_correct = fewshot_accuracy_sum(preds, [label])
+
       if correctness_filter is True:
         if not is_correct:
           print(f"skipping batch {batch_num}, point {data_point_id}, as it is wrongly predicted")
@@ -357,7 +388,7 @@ def causal_tracing_loop(args, experiment_name, task_name, split_name, model_name
       print("correct: ", is_correct)
 
     # check_corruption_effects means we 
-    if check_corruption_effects:
+    if min_pred_prob > 0 or min_corruption_effect > 0:
       high_score, low_score = get_high_and_low_scores(
         mt, query_input, subject, target=tracing_target, samples=num_samples, noise=noise_sd, 
       )
@@ -500,6 +531,7 @@ if __name__ == "__main__":
         mem_usage = True
 
         if '20b' not in model_name:
+            print("Loading model...")
             mt = ModelAndTokenizer(model_name, low_cpu_mem_usage=mem_usage, torch_dtype=torch_dtype, cache_dir=MODEL_DIR)
             torch.cuda.empty_cache()
             mt.model.eval().cuda()
@@ -527,14 +559,17 @@ if __name__ == "__main__":
     # begin tracing
     template_id = 8
     k = 0
-    restore_module = None
+    restore_module = 'mlp'
     ovr_exp_name = f"{_model_name}_{args.ds_name}_k{k}_sd{RANDOM_SEED}_tracing_sweep_n{args.dataset_size_limit}"
+    # ovr_exp_name = f"{_model_name}_{args.ds_name}_k{k}_sd{RANDOM_SEED}_noising_sweep_n{args.dataset_size_limit}"
     print("Starting experiment: ", ovr_exp_name)
 
     if args.ds_name == 'counterfact':
         use_data = load_counterfact_dataset(args)
     if args.ds_name == 'factual':
         use_data = load_factual_dataset(args)
+    if args.ds_name == 'zsre':
+        use_data = load_zsre_dataset(args, mt.tokenizer, num_points=args.dataset_size_limit)
     prompt_ex, eval_data = pull_prompt_from_data(use_data, k)
 
     # trace args
@@ -557,6 +592,7 @@ if __name__ == "__main__":
     results_dfs = []
     for window_size in window_sizes:
         exp_name = f"{_model_name}_{args.ds_name}_k{k}_wd{window_size}_sd{RANDOM_SEED}"
+        # exp_name = f"{_model_name}_{args.ds_name}_k{k}_wd{window_size}_sd{RANDOM_SEED}_noise0"
         if args.run:
             results_df, metadata_df = causal_tracing_loop(args, exp_name, args.ds_name, "", args.model_name, 
                                         mt, eval_data,
@@ -573,7 +609,8 @@ if __name__ == "__main__":
                                         template_id=template_id, 
                                         print_examples=10,
                                         overwrite=args.overwrite,
-                                        correctness_filter=True)
+                                        correctness_filter=False,
+                                        min_pred_prob=.02)
         results_df = make_results_df(_model_name, exp_name, count=args.dataset_size_limit)
         results_df['trace_window_size'] = window_size
         results_dfs.append(results_df)

@@ -4,7 +4,8 @@
 
   # Data files
   DATA_DIR: "data"
-  STATS_DIR: "data/stats"
+  # STATS_DIR: "data/stats"
+  STATS_DIR: "/playpen/peter/cache_dir"
 
   # Hyperparameters
   HPARAMS_DIR: "hparams"

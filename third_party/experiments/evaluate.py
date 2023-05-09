@@ -46,7 +46,8 @@ ALG_DICT = {
 
 DS_DICT = {
     "cf": (CounterFactDataset, compute_rewrite_quality_counterfact),
-    "zsre": (MENDQADataset, compute_rewrite_quality_zsre),
+    "zsre": (MENDQADataset, compute_rewrite_quality_counterfact), # using same eval as counterfact. not the accuracy-based zsre eval
+    # "zsre": (MENDQADataset, compute_rewrite_quality_zsre),
 }
 
 CODE_DIR='/home/peter/private/belief-localization/third_party'
@@ -199,6 +200,7 @@ def make_editing_results_df(exp_name, n=1000):
   run_dir = os.path.join(f'{BASE_DIR}/results/', exp_name)
   dataframes = []
   printed = 0
+  # import pdb; pdb.set_trace()
   for case_id in range(n):
     case_result_path = os.path.join(run_dir, f"case_{case_id}.json")
     if not os.path.exists(case_result_path):
@@ -582,11 +584,11 @@ def main(
                     "case_id": case_id,
                     "requested_rewrite": request,
                     "time": exec_time,
-                    "post": ds_eval_method(args, edited_model, tok, record, snips, vec, skip_generation_tests),
+                    "post": ds_eval_method(args, edited_model, tok, record, snips, vec, skip_generation_tests, ds_name=ds_name),
                 }
                 for k, v in weights_copy.items():
                     nethook.get_parameter(model, k)[...] = v.to("cuda")
-                metrics["pre"] = ds_eval_method(args, model, tok, record, snips, vec, skip_generation_tests)
+                metrics["pre"] = ds_eval_method(args, model, tok, record, snips, vec, skip_generation_tests, ds_name=ds_name)
                 metrics['prior_prob'] = prior_prob
 
             print("Evaluation took", time.time() - start)
@@ -755,6 +757,7 @@ if __name__ == "__main__":
     )
     parser.set_defaults(skip_generation_tests=True, conserve_memory=True)
     args = parser.parse_args()
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     # set device
     device = torch.device(f"cuda:{args.gpu}")
@@ -765,6 +768,7 @@ if __name__ == "__main__":
 
     # experiment checks
     if args.fact_erasure:
+        pass
         assert args.correctness_filter, "only erase known facts"
     if args.alg_name == "MEMIT":
         assert args.window_sizes != "1", "use window size >=1 with MEMIT"
@@ -814,6 +818,8 @@ if __name__ == "__main__":
     if '6B' in model_name:
         central_layers = list(range(0, 28, 4)) + [5, 27]
         num_layers = 28
+        if ds_name == 'zsre':
+            central_layers = np.setdiff1d(central_layers, [24])
     if alg_name == 'FT' and 1 in window_sizes and not args.fact_forcing:
         central_layers = [-1] + central_layers
     if args.edit_layer > -2:
@@ -842,7 +848,7 @@ if __name__ == "__main__":
                     verbose=args.verbose,
                     overwrite=args.overwrite,
                     correctness_check=args.correctness_filter,
-                    target_prob_check=.02 if args.correctness_filter and args.fact_erasure else 0
+                    target_prob_check=.02 # if args.correctness_filter and args.fact_erasure else 0
                 )
             # accumulate results
             exp_name = ROME_experiment_name_from_override_params(args, model_name, alg_name, ds_name, override_hparams, hparams_class)
@@ -864,6 +870,7 @@ if __name__ == "__main__":
     print(f"saving csv at {save_path}...")
     print("results shape: ", results_df.shape)
     metrics = ['post_rewrite_success', 'rewrite_prob_diff', 'rewrite_post_prob', 'rewrite_score', 'post_paraphrase_success', 'paraphrase_prob_diff', 'paraphrase_post_prob', 'paraphrase_score', 'post_neighborhood_success', 'neighborhood_prob_diff', 'neighborhood_score', 'essence_ppl_diff']
+    # metrics = ["post_rewrite_acc", "pre_rewrite_acc", "post_paraphrase_acc", "pre_paraphrase_acc", "paraphrase_prompts_correct"]
     # another test code review comment
     if len(window_sizes) == 1 and len(central_layers) == 1:
         print("\nfinal metrics: ")
